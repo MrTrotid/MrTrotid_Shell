@@ -628,7 +628,7 @@ Item {
                 // Battery pill
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    implicitWidth: batRow.implicitWidth + 12
+                    implicitWidth: serviceContext?.shellState?.batteryTooltipVisible ? batExpandedRow.implicitWidth + 16 : batRow.implicitWidth + 12
                     height: 18
                     radius: 6
                     color: {
@@ -639,41 +639,36 @@ Item {
                         return colSuccess
                     }
                     visible: batteryDevice !== null && batteryDevice.ready
+                    Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
                     MouseArea {
                         id: batHover
                         anchors.fill: parent
-                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         propagateComposedEvents: true
-                        onEntered: {
-                            console.log("HOVER: battery entered")
-                            if (!serviceContext?.shellState) { console.log("HOVER: no shellState!"); return }
+                        onClicked: {
+                            if (!serviceContext?.shellState) return
                             serviceContext.shellState.batteryTooltipText = root.batteryTooltipText
-                            serviceContext.shellState.batteryTooltipVisible = true
-                            console.log("HOVER: set tooltip visible = true")
-                        }
-                        onExited: {
-                            console.log("HOVER: battery exited")
-                            if (serviceContext?.shellState)
-                                serviceContext.shellState.batteryTooltipVisible = false
+                            serviceContext.shellState.batteryTooltipVisible = !serviceContext.shellState.batteryTooltipVisible
                         }
                     }
 
+                    // Collapsed view
                     Row {
                         id: batRow
                         anchors.centerIn: parent
                         spacing: 4
+                        visible: !serviceContext?.shellState?.batteryTooltipVisible
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.verticalCenterOffset: 1
                             text: {
                                 if (!batteryDevice || !batteryDevice.ready) return ""
                                 var pct = batteryDevice.percentage * 100
-                                return pct >= 80 ? "" :
-                                       pct >= 60 ? "" :
-                                       pct >= 40 ? "" :
-                                       pct >= 20 ? "" : ""
+                                return pct >= 80 ? "" :
+                                       pct >= 60 ? "" :
+                                       pct >= 40 ? "" :
+                                       pct >= 20 ? "" : ""
                             }
                             color: colOnPrimary
                             font.family: "JetBrainsMono Nerd Font"
@@ -690,6 +685,24 @@ Item {
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 12
                             font.weight: Font.Bold
+                        }
+                    }
+
+                    // Expanded view (single line)
+                    Row {
+                        id: batExpandedRow
+                        anchors.centerIn: parent
+                        spacing: 8
+                        visible: serviceContext?.shellState?.batteryTooltipVisible
+                        Repeater {
+                            model: root.batteryTooltipText.split("\n")
+                            Text {
+                                required property string modelData
+                                text: modelData
+                                color: colOnPrimary
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                            }
                         }
                     }
                 }

@@ -30,6 +30,8 @@ Item {
     property bool dndEnabled: false
 
     property var groupedNotifications: ({})
+    readonly property var appKeys: Object.keys(groupedNotifications)
+    readonly property bool hasNotifs: appKeys.length > 0
     property real globalOrbitAngle: 0
 
     NotificationServer {
@@ -402,9 +404,6 @@ Item {
                 opacity: panel.introNotifs
                 transform: Translate { y: 15 * (1.0 - panel.introNotifs) }
 
-                property var appKeys: Object.keys(groupedNotifications)
-                property bool hasNotifs: appKeys.length > 0
-
                 ColumnLayout {
                     anchors.fill: parent
                     spacing: 6
@@ -452,7 +451,7 @@ Item {
                         ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
                         ListView {
-                            model: appKeys
+                            model: panel.appKeys
                             spacing: 8
 
                             delegate: ColumnLayout {

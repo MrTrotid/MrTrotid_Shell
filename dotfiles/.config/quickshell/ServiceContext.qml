@@ -17,6 +17,8 @@ Item {
     property bool calendarPopupOpen: false
     property bool notificationPanelOpen: false
 
+    readonly property bool anyPopupOpen: bluetoothPanelOpen || wifiSelectorOpen || calendarPopupOpen || notificationPanelOpen
+
     // ShellState functions
     function toggleBar() { barVisible = !barVisible }
     function toggleMediaCard() { mediaCardOpen = !mediaCardOpen }
@@ -30,6 +32,8 @@ Item {
     function toggleBluetoothPanel() {
         console.log("STATE: toggleBluetoothPanel() called, was:", bluetoothPanelOpen)
         bluetoothPanelOpen = !bluetoothPanelOpen
+        if (bluetoothPanelOpen) barVisible = true
+        batteryTooltipVisible = false
         quickSettingsOpen = false
         wifiSelectorOpen = false
         notificationPanelOpen = false
@@ -37,12 +41,16 @@ Item {
     function toggleWifiSelector() {
         console.log("STATE: toggleWifiSelector() called, was:", wifiSelectorOpen)
         wifiSelectorOpen = !wifiSelectorOpen
+        if (wifiSelectorOpen) barVisible = true
+        batteryTooltipVisible = false
         quickSettingsOpen = false
         bluetoothPanelOpen = false
         notificationPanelOpen = false
     }
     function toggleCalendarPopup() {
         calendarPopupOpen = !calendarPopupOpen
+        if (calendarPopupOpen) barVisible = true
+        batteryTooltipVisible = false
         quickSettingsOpen = false
         bluetoothPanelOpen = false
         wifiSelectorOpen = false
@@ -50,6 +58,8 @@ Item {
     }
     function toggleNotificationPanel() {
         notificationPanelOpen = !notificationPanelOpen
+        if (notificationPanelOpen) barVisible = true
+        batteryTooltipVisible = false
         quickSettingsOpen = false
         bluetoothPanelOpen = false
         wifiSelectorOpen = false
