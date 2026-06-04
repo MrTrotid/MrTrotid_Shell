@@ -47,7 +47,6 @@ hl.bind(mainMod .. " + J", hl.dsp.layout("swapsplit"))
 
 -- ── Focus ─────────────────────────────────────────────────────────────
 hl.bind(mainMod .. " + H", hl.dsp.focus({direction="l"}))
-hl.bind(mainMod .. " + L", hl.dsp.focus({direction="r"}))
 hl.bind(mainMod .. " + LEFT", hl.dsp.focus({direction="l"}))
 hl.bind(mainMod .. " + RIGHT", hl.dsp.focus({direction="r"}))
 hl.bind(mainMod .. " + SHIFT + H", hl.dsp.window.move({direction="l"}))
@@ -72,7 +71,8 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("pkill waybar; waybar &"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("wallset-backend-startup"))
 hl.bind(mainMod .. " + ALT + R", hl.dsp.exec_cmd("wallset-dark-backend-startup"))
 hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd("colorscheme-set"))
-hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind(mainMod .. " + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"))
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("toggle-hyprsunset"))
 
 -- ── Screenshots ───────────────────────────────────────────────────────

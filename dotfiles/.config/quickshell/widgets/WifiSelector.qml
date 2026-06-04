@@ -37,6 +37,52 @@ Item {
     property string viewMode: "home"
     property var selectedNetwork: null
 
+    // ── Intro animation ──
+    property real introMain: 0
+    property real introBg: 0
+    property real introCore: 0
+    property real introCards: 0
+    property real introFooter: 0
+
+    function show() {
+        introMain = 0; introBg = 0; introCore = 0; introCards = 0; introFooter = 0
+        introAnim.start()
+    }
+
+    SequentialAnimation {
+        id: introAnim
+        running: false
+        PauseAnimation { duration: 20 }
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "introMain"; from: 0; to: 1.0; duration: 400; easing.type: Easing.OutQuart }
+            SequentialAnimation {
+                PauseAnimation { duration: 50 }
+                NumberAnimation { target: root; property: "introBg"; from: 0; to: 1.0; duration: 600; easing.type: Easing.OutSine }
+            }
+            SequentialAnimation {
+                PauseAnimation { duration: 120 }
+                NumberAnimation { target: root; property: "introCore"; from: 0; to: 1.0; duration: 500; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
+            }
+            SequentialAnimation {
+                PauseAnimation { duration: 200 }
+                NumberAnimation { target: root; property: "introCards"; from: 0; to: 1.0; duration: 500; easing.type: Easing.OutQuint }
+            }
+            SequentialAnimation {
+                PauseAnimation { duration: 300 }
+                NumberAnimation { target: root; property: "introFooter"; from: 0; to: 1.0; duration: 400; easing.type: Easing.OutQuint }
+            }
+        }
+    }
+
+    ParallelAnimation {
+        id: exitAnim
+        NumberAnimation { target: root; property: "introMain"; to: 0; duration: 250; easing.type: Easing.InQuart }
+        NumberAnimation { target: root; property: "introBg"; to: 0; duration: 200; easing.type: Easing.InQuart }
+        NumberAnimation { target: root; property: "introCore"; to: 0; duration: 200; easing.type: Easing.InQuart }
+        NumberAnimation { target: root; property: "introCards"; to: 0; duration: 200; easing.type: Easing.InQuart }
+        NumberAnimation { target: root; property: "introFooter"; to: 0; duration: 200; easing.type: Easing.InQuart }
+    }
+
     property real globalOrbitAngle: 0
     NumberAnimation on globalOrbitAngle {
         from: 0; to: Math.PI * 2; duration: 200000; loops: Animation.Infinite; running: true
@@ -158,6 +204,11 @@ Item {
         savedListProc.running = true
     }
 
+    Item {
+        anchors.fill: parent
+        scale: 0.95 + (0.05 * root.introMain)
+        opacity: root.introMain
+
     Rectangle {
         anchors.fill: parent
         radius: 16
@@ -171,8 +222,18 @@ Item {
             width: parent.width * 0.8; height: width; radius: width / 2
             x: (parent.width / 2 - width / 2) + Math.cos(root.globalOrbitAngle * 2) * 150
             y: (parent.height / 2 - height / 2) + Math.sin(root.globalOrbitAngle * 2) * 100
-            opacity: root.isPowered ? 0.08 : 0.02
+            opacity: (root.isPowered ? 0.08 : 0.02) * root.introBg
             color: root.hasConn ? accentLight : _surf2
+            Behavior on color { ColorAnimation { duration: 1000 } }
+            Behavior on opacity { NumberAnimation { duration: 1000 } }
+            visible: opacity > 0.01
+        }
+        Rectangle {
+            width: parent.width * 0.9; height: width; radius: width / 2
+            x: (parent.width / 2 - width / 2) + Math.sin(root.globalOrbitAngle * 1.5) * -150
+            y: (parent.height / 2 - height / 2) + Math.cos(root.globalOrbitAngle * 1.5) * -100
+            opacity: (root.isPowered ? 0.06 : 0.01) * root.introBg
+            color: root.hasConn ? Qt.darker(_accent, 1.25) : _surf2
             Behavior on color { ColorAnimation { duration: 1000 } }
             Behavior on opacity { NumberAnimation { duration: 1000 } }
             visible: opacity > 0.01
@@ -192,7 +253,7 @@ Item {
         Item {
             id: radarItem
             anchors.fill: parent
-            opacity: root.isPowered ? 1.0 : 0.0
+            opacity: (root.isPowered ? 1.0 : 0.0) * root.introBg
             scale: root.isPowered ? 1.0 : 1.05
             visible: opacity > 0.01
             Behavior on opacity { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
@@ -222,6 +283,9 @@ Item {
                 id: coreItem
                 anchors.centerIn: parent
                 width: 140; height: 140
+                opacity: root.introCore
+                scale: 0.85 + (0.15 * root.introCore)
+                transform: Translate { y: 20 * (1.0 - root.introCore) }
 
                 MultiEffect {
                     source: centralCore
@@ -616,7 +680,7 @@ Item {
                     width: 160; height: 56
 
                     property bool isLoaded: false
-                    opacity: isLoaded ? 1.0 : 0.0
+                    opacity: (isLoaded ? 1.0 : 0.0) * root.introCards
                     visible: opacity > 0.01
                     Behavior on opacity { NumberAnimation { duration: 400; easing.type: Easing.OutQuint } }
 
@@ -864,6 +928,8 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: 160; height: 40; radius: 12
             color: _surf1
+            opacity: root.introFooter
+            transform: Translate { y: 20 * (1.0 - root.introFooter) }
 
             Rectangle {
                 id: wifiTogglePill
@@ -892,4 +958,5 @@ Item {
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggleWifi() }
         }
     }
+    } // end wrapping Item
 }

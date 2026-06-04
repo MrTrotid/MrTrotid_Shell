@@ -20,6 +20,8 @@
 - Toggle QuickSettings: `Super + N`
 - Toggle Bluetooth panel: `Super + B`
 - Toggle Calendar popup: Click time in bar
+- Lock screen: `Super + L` (hyprlock)
+- Suspend: `Super + Shift + L`
 - Test Quickshell: `quickshell -c mrtrotid-shell -v`
 
 ## Configuration Locations
@@ -49,7 +51,7 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - Auto-hide cursor timer
 - `BarContent.qml` - Bar contents: workspace/clock/volume/backlight/battery/bt/tray/network/notifs
 - `ServiceContext.qml` - Inline state store (replaces old `state/ShellState.qml` via `shellState: this`)
-- `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml
+- `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml, NotificationPanel.qml
 - `calendar/` - weather.sh, .env (OpenWeatherMap config)
 - `functions/ColorUtils.qml` - Color utilities
 

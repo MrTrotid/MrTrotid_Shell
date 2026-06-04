@@ -15,6 +15,7 @@ Item {
     property bool batteryTooltipVisible: false
     property string batteryTooltipText: ""
     property bool calendarPopupOpen: false
+    property bool notificationPanelOpen: false
 
     // ShellState functions
     function toggleBar() { barVisible = !barVisible }
@@ -24,24 +25,35 @@ Item {
         quickSettingsOpen = !quickSettingsOpen
         bluetoothPanelOpen = false
         wifiSelectorOpen = false
+        notificationPanelOpen = false
     }
     function toggleBluetoothPanel() {
         console.log("STATE: toggleBluetoothPanel() called, was:", bluetoothPanelOpen)
         bluetoothPanelOpen = !bluetoothPanelOpen
         quickSettingsOpen = false
         wifiSelectorOpen = false
+        notificationPanelOpen = false
     }
     function toggleWifiSelector() {
         console.log("STATE: toggleWifiSelector() called, was:", wifiSelectorOpen)
         wifiSelectorOpen = !wifiSelectorOpen
         quickSettingsOpen = false
         bluetoothPanelOpen = false
+        notificationPanelOpen = false
     }
     function toggleCalendarPopup() {
         calendarPopupOpen = !calendarPopupOpen
         quickSettingsOpen = false
         bluetoothPanelOpen = false
         wifiSelectorOpen = false
+        notificationPanelOpen = false
+    }
+    function toggleNotificationPanel() {
+        notificationPanelOpen = !notificationPanelOpen
+        quickSettingsOpen = false
+        bluetoothPanelOpen = false
+        wifiSelectorOpen = false
+        calendarPopupOpen = false
     }
     function keepBarTemporarily() {
         keepBarVisible = true

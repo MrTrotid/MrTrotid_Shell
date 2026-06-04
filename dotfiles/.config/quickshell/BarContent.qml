@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -573,10 +574,54 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.verticalCenterOffset: 1
-                        text: ""
+                        text: ""
                         color: colOnSurface
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 14
+                    }
+                }
+
+                // System Tray (monochrome)
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+                    visible: SystemTray.items.values.length > 0
+
+                    Repeater {
+                        model: SystemTray.items.values
+
+                        delegate: Item {
+                            required property SystemTrayItem modelData
+                            width: 18
+                            height: 18
+                            visible: {
+                                var t = (modelData?.title ?? "").toLowerCase()
+                                return t.indexOf("bluetooth") === -1 &&
+                                       t.indexOf("blueman") === -1
+                            }
+
+                            Image {
+                                id: trayIcon
+                                anchors.fill: parent
+                                source: modelData.icon
+                                sourceSize.width: 18
+                                sourceSize.height: 18
+                                visible: false
+                            }
+
+                            MultiEffect {
+                                anchors.fill: parent
+                                source: trayIcon
+                                colorization: 1.0
+                                colorizationColor: colOnSurface
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: modelData.activate()
+                            }
+                        }
                     }
                 }
 
@@ -702,42 +747,7 @@ Item {
                             if (serviceContext?.shellState) {
                                 serviceContext.shellState.barVisible = true
                                 serviceContext.shellState.keepBarTemporarily()
-                                serviceContext.shellState.toggleQuickSettings()
-                            }
-                        }
-                    }
-                }
-
-                // System Tray
-                Row {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
-                    visible: SystemTray.items.values.length > 0
-
-                    Repeater {
-                        model: SystemTray.items.values
-
-                        delegate: Item {
-                            required property SystemTrayItem modelData
-                            width: 18
-                            height: 18
-                            visible: {
-                                var t = (modelData?.title ?? "").toLowerCase()
-                                return t.indexOf("bluetooth") === -1 &&
-                                       t.indexOf("blueman") === -1
-                            }
-
-                            Image {
-                                anchors.fill: parent
-                                source: modelData.icon
-                                sourceSize.width: 18
-                                sourceSize.height: 18
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: modelData.activate()
+                                serviceContext.shellState.toggleNotificationPanel()
                             }
                         }
                     }

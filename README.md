@@ -63,6 +63,8 @@ Keybinds:
 - `Super + M` — Toggle media player
 - `Super + N` — Toggle QuickSettings
 - `Super + B` — Toggle Bluetooth panel
+- `Super + L` — Lock screen (hyprlock)
+- `Super + Shift + L` — Suspend
 
 ## Credits
 
