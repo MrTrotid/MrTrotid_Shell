@@ -278,7 +278,7 @@ Item {
 
     Process {
         id: nmUpdate
-        command: ["sh", "-c", "nmcli -t -f ACTIVE,SIGNAL,SSID device wifi list --rescan no | head -1"]
+        command: ["sh", "-c", "nmcli -t -f ACTIVE,SIGNAL,SSID device wifi list --rescan no | grep '^yes:' | head -1"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var line = text.trim()
@@ -344,7 +344,8 @@ Item {
             width: clockText.implicitWidth + 24
             height: 26
             radius: 20
-            color: colColor3
+            color: clockMa.containsMouse ? Qt.lighter(colColor3, 1.1) : colColor3
+            Behavior on color { ColorAnimation { duration: 150 } }
 
             Text {
                 id: clockText
@@ -354,6 +355,14 @@ Item {
                 font.pixelSize: 14
                 font.weight: Font.Bold
                 color: colOnPrimary
+            }
+
+            MouseArea {
+                id: clockMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: serviceContext?.toggleCalendarPopup()
             }
         }
 
@@ -663,10 +672,19 @@ Item {
                 // Network (WiFi)
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: networkConnected ? "" : "󰤭"
+                    text: networkConnected ? "󰤨" : "󰤭"
                     color: networkConnected ? colError : colColor4
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (serviceContext?.shellState)
+                                serviceContext.shellState.toggleWifiSelector()
+                        }
+                    }
                 }
 
                 // Notifications

@@ -51,7 +51,7 @@ info "Package manager: $PKG_MANAGER"
 info "Checking dependencies..."
 
 HYPRLAND_PKGS="hyprland hypridle hyprlock hyprpaper hyprsunset"
-COMMON_PKGS="brightnessctl pipewire wireplumber network-manager-applet polkit-kde-agent"
+COMMON_PKGS="brightnessctl pipewire wireplumber network-manager-applet polkit-kde-agent bluez-utils"
 
 case "$PKG_MANAGER" in
     pacman)

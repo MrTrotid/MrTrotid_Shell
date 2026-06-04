@@ -55,130 +55,35 @@ ShellRoot {
             anchors.rightMargin: 8
             anchors.top: barContent.bottom
             anchors.topMargin: 4
-            width: 320
-            implicitHeight: Math.max(200, blCol.implicitHeight + 20)
+            width: parent.width * 0.4
+            implicitHeight: Math.max(300, 500)
 
             opacity: visible ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 150 } }
 
-            property color _surf: "#1a2120"
-            property color _surfVar: "#303635"
-            property color _onSurf: "#dde4e2"
-            property color _prim: "#81d5ca"
-            property color _onPrim: "#003732"
-            property color _outline: "#606866"
-            property color _suc: "#92d5ab"
-            property color _err: "#ffb4ab"
-            property var _adapter: Bluetooth.defaultAdapter
-            property bool _scanning: _adapter?.discovering ?? false
-
-            function toggleScan() {
-                if (!_adapter) return
-                _adapter.discovering = !_adapter.discovering
+            BluetoothSelector {
+                anchors.fill: parent
+                serviceContext: ctx
             }
+        }
 
-            Rectangle {
-                anchors.fill: parent; radius: 12
-                color: bl._surf; border.color: bl._surfVar; border.width: 1
+        // ── WIFI SELECTOR POPUP ──
+        Item {
+            id: wifiSel
+            visible: ctx?.wifiSelectorOpen ?? false
+            anchors.right: parent.right
+            anchors.rightMargin: 8
+            anchors.top: barContent.bottom
+            anchors.topMargin: 4
+            width: parent.width * 0.4
+            implicitHeight: Math.max(300, 500)
 
-                ColumnLayout {
-                    id: blCol
-                    anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-                    anchors.margins: 10; spacing: 6
+            opacity: visible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
 
-                    RowLayout {
-                        Layout.fillWidth: true; spacing: 8
-                        Text { text: ""; color: bl._prim; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 16 }
-                        Text { text: "Bluetooth"; color: bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 14; font.weight: Font.Bold; Layout.fillWidth: true }
-
-                        Rectangle {
-                            id: blTog; width: 44; height: 24; radius: 12
-                            color: (bl._adapter?.enabled ?? false) ? bl._prim : bl._outline
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                            Rectangle { width: 20; height: 20; radius: 10; color: "#ffffff"; x: (bl._adapter?.enabled ?? false) ? blTog.width - width - 2 : 2; y: 2; Behavior on x { NumberAnimation { duration: 150 } } }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (bl._adapter) bl._adapter.enabled = !bl._adapter.enabled } }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true; spacing: 8
-                        Text { text: bl._adapter?.name ?? "No Adapter"; color: bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11 }
-                        Item { Layout.fillWidth: true }
-                        Text { text: (bl._adapter?.enabled ?? false) ? "Enabled" : "Disabled"; color: (bl._adapter?.enabled ?? false) ? bl._suc : bl._err; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 10 }
-                    }
-
-                    Rectangle { Layout.fillWidth: true; height: 1; color: bl._surfVar }
-
-                    Text {
-                        text: "Paired Devices"; color: bl._prim; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11; font.weight: Font.Bold
-                        visible: { if (!(bl._adapter?.enabled ?? false)) return false; var all = bl._adapter?.devices?.values ?? []; return all.some(function(d) { return d.paired }) }
-                        Layout.topMargin: 2
-                    }
-
-                    Repeater {
-                        model: { if (!(bl._adapter?.enabled ?? false)) return []; var all = bl._adapter?.devices?.values ?? []; return all.filter(function(d) { return d.paired }) }
-                        delegate: Rectangle {
-                            required property var modelData
-                            Layout.fillWidth: true; implicitHeight: 36; radius: 8
-                            color: modelData.connected ? Qt.rgba(129/255, 213/255, 202/255, 0.12) : "transparent"
-                            border.color: modelData.connected ? bl._prim : bl._surfVar; border.width: 1
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                            RowLayout {
-                                anchors.fill: parent; anchors.margins: 8; spacing: 8
-                                ColumnLayout {
-                                    Layout.fillWidth: true; spacing: 2
-                                    Text { text: modelData.name || modelData.address; color: bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11; font.weight: modelData.connected ? Font.Bold : Font.Normal; elide: Text.ElideRight }
-                                    Text { text: modelData.connected ? "Connected" : "Disconnected"; color: modelData.connected ? bl._suc : bl._outline; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 9 }
-                                }
-                                Text { text: modelData.connected ? "" : ""; color: modelData.connected ? bl._prim : bl._outline; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
-                            }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (modelData.connected) modelData.disconnect(); else modelData.connect() } }
-                        }
-                    }
-
-                    Text {
-                        text: "Available Devices"; color: bl._outline; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11
-                        visible: { if (!(bl._adapter?.enabled ?? false)) return false; var all = bl._adapter?.devices?.values ?? []; return all.some(function(d) { return !d.paired }) }
-                    }
-
-                    Repeater {
-                        model: { if (!(bl._adapter?.enabled ?? false)) return []; var all = bl._adapter?.devices?.values ?? []; return all.filter(function(d) { return !d.paired }) }
-                        delegate: Rectangle {
-                            required property var modelData
-                            Layout.fillWidth: true; implicitHeight: 36; radius: 8
-                            color: "transparent"; border.color: bl._surfVar; border.width: 1
-                            RowLayout {
-                                anchors.fill: parent; anchors.margins: 8; spacing: 8
-                                ColumnLayout {
-                                    Layout.fillWidth: true; spacing: 2
-                                    Text { text: modelData.name || modelData.address; color: bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11; elide: Text.ElideRight }
-                                    Text { text: "Available"; color: bl._outline; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 9 }
-                                }
-                                Text { text: ""; color: bl._prim; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
-                            }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { if (!modelData.paired) modelData.connect() } }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true; implicitHeight: 36; radius: 8
-                        color: bl._scanning ? bl._prim : bl._surfVar
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                        RowLayout { anchors.centerIn: parent; spacing: 8
-                            Text { text: bl._scanning ? "" : ""; color: bl._scanning ? bl._onPrim : bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 13 }
-                            Text { text: bl._scanning ? "Scanning..." : "Scan for Devices"; color: bl._scanning ? bl._onPrim : bl._onSurf; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11 }
-                        }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: bl.toggleScan() }
-                    }
-
-                    Text {
-                        Layout.fillWidth: true; Layout.preferredHeight: 36
-                        horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                        text: !(bl._adapter?.enabled ?? false) ? "  Bluetooth is turned off" : "  No devices found"
-                        color: bl._outline; font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 11
-                        visible: { if (!(bl._adapter?.enabled ?? false)) return true; return (bl._adapter?.devices?.values?.length ?? 0) === 0 }
-                    }
-                }
+            WifiSelector {
+                anchors.fill: parent
+                serviceContext: ctx
             }
         }
 
@@ -321,6 +226,29 @@ ShellRoot {
         }
 
         Timer { id: hideTimer; interval: 1500; repeat: false; onTriggered: { if (!main.cursorNearTop && ctx?.shellState) ctx.barVisible = false } }
+
+        // ── Calendar/Weather/Time Popup ──
+        Item {
+            id: calPopup
+            visible: ctx?.calendarPopupOpen ?? false
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: barContent.bottom
+            anchors.topMargin: 4
+            width: parent.width * 0.70 + 20
+            implicitHeight: 500
+
+            opacity: visible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
+
+            CalendarPopup {
+                id: calPopupInner
+                anchors.fill: parent
+            }
+
+            onVisibleChanged: {
+                if (visible) calPopupInner.show()
+            }
+        }
     }
 
     // ── Media Card ──
@@ -339,6 +267,6 @@ ShellRoot {
     // ── Keybinds ──
     Shortcut { sequence: "Super+O"; onActivated: ctx?.toggleBar() }
     Shortcut { sequence: "Super+M"; onActivated: ctx?.toggleMediaCard() }
-    Shortcut { sequence: "Super+N"; onActivated: ctx?.toggleQuickSettings() }
+    Shortcut { sequence: "Super+N"; onActivated: ctx?.toggleWifiSelector() }
     Shortcut { sequence: "Super+B"; onActivated: ctx?.toggleBluetoothPanel() }
 }
