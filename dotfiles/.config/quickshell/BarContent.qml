@@ -138,6 +138,14 @@ Item {
         }
     }
 
+    // Independent brightness poll — catches changes from keybinds (exec brightnessctl)
+    Timer {
+        interval: 300
+        running: true
+        repeat: true
+        onTriggered: getBrightness.running = true
+    }
+
     Process {
         id: getBrightness
         command: ["brightnessctl", "g"]
@@ -163,7 +171,7 @@ Item {
 
     // ── Volume ──
     Timer {
-        interval: 2000
+        interval: 500
         running: true
         repeat: true
         onTriggered: getVolumeCmd.running = true
@@ -574,7 +582,7 @@ Item {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.verticalCenterOffset: 1
-                        text: ""
+                        text: "\uF0C9"
                         color: colOnSurface
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 14
@@ -665,10 +673,10 @@ Item {
                             text: {
                                 if (!batteryDevice || !batteryDevice.ready) return ""
                                 var pct = batteryDevice.percentage * 100
-                                return pct >= 80 ? "" :
-                                       pct >= 60 ? "" :
-                                       pct >= 40 ? "" :
-                                       pct >= 20 ? "" : ""
+                                return pct >= 80 ? "\uF240" :
+                                       pct >= 60 ? "\uF241" :
+                                       pct >= 40 ? "\uF242" :
+                                       pct >= 20 ? "\uF243" : "\uF244"
                             }
                             color: colOnPrimary
                             font.family: "JetBrainsMono Nerd Font"

@@ -51,11 +51,13 @@ Item (root)
 
 ### Brightness
 - `brightnessctl g` (current) / `brightnessctl m` (max)
-- 150ms debounce timer after changes
+- 150ms debounce timer after bar's own scroll/click changes
+- **Independent 300ms poll timer** — catches changes from keybinds (which run `brightnessctl` externally via Hyprland exec, bypassing Quickshell)
 - Scroll wheel on brightness text: ±5%
 
 ### Volume
-- `wpctl get-volume @DEFAULT_AUDIO_SINK@` every 2 seconds
+- `wpctl get-volume @DEFAULT_AUDIO_SINK@`
+- **500ms poll timer** — catches changes from keybinds running `wpctl` externally
 - Parses `Volume: 0.80` and `[MUTED]` flag
 - Supports up to 150% (PipeWire allows over-amplification)
 - Scroll wheel: ±5%, click: toggle mute
@@ -100,11 +102,14 @@ Item (root)
 - Tooltip positioned at bottom-right of bar
 
 ### Right Section Icons
-| Icon | Click Action |
-|------|-------------|
-| Bluetooth (`\uF293`) | `toggleBluetoothPanel()` |
-| WiFi (󰤨/󰤭) | `toggleWifiSelector()` |
-| Notifications (󰂚) | `toggleQuickSettings()` + keep bar visible |
+| Icon | Codepoint | Click Action |
+|------|-----------|-------------|
+| Memory (three lines) | `\uF0C9` (fa-bars) | None (display only) |
+| Bluetooth | `\uF293` | `toggleBluetoothPanel()` |
+| WiFi | 󰤨/󰤭 (surrogate pairs) | `toggleWifiSelector()` |
+| Notifications | 󰂚 | `toggleNotificationPanel()` + keep bar visible |
+
+**Memory icon note:** The memory module uses `U+F0C9` (`fa-bars`, the three-line hamburger icon) matching the original waybar config. This is a BMP codepoint (< U+FFFF), so it can be represented as a simple `\uF0C9` escape in QML. Nerd Font icons above U+FFFF require surrogate pairs (e.g., `\uDB82\uDD28` for wifi icons).
 
 ## Modifying This File
 - To add a module: Add to the appropriate section (left/center/right)

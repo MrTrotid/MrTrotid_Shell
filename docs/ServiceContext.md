@@ -27,34 +27,57 @@ Item
 | `wifiSelectorOpen` | bool | false | WiFi selector popup |
 | `batteryTooltipVisible` | bool | false | Battery tooltip visibility |
 | `batteryTooltipText` | string | "" | Battery tooltip content |
+| `calendarPopupOpen` | bool | false | Calendar popup |
+| `notificationPanelOpen` | bool | false | Notification panel popup |
+| `anyPopupOpen` | readonly bool | — | Computed: true if any popup is open |
 | `colorUtils` | ColorUtils | {} | Color utility functions |
 
 ## Functions
 
 ### Toggle Functions
-Each toggle function flips its boolean and closes other popups (mutual exclusion):
+Each toggle function flips its boolean and closes other popups (mutual exclusion). Opening a popup always sets `barVisible = true`.
 
 ```javascript
 function toggleBar() { barVisible = !barVisible }
 
 function toggleMediaCard() { mediaCardOpen = !mediaCardOpen }
 
-function toggleQuickSettings() {
-    quickSettingsOpen = !quickSettingsOpen
-    bluetoothPanelOpen = false
-    wifiSelectorOpen = false
-}
-
 function toggleBluetoothPanel() {
     bluetoothPanelOpen = !bluetoothPanelOpen
+    if (bluetoothPanelOpen) barVisible = true
+    batteryTooltipVisible = false
     quickSettingsOpen = false
     wifiSelectorOpen = false
+    notificationPanelOpen = false
 }
 
 function toggleWifiSelector() {
     wifiSelectorOpen = !wifiSelectorOpen
+    if (wifiSelectorOpen) barVisible = true
+    batteryTooltipVisible = false
     quickSettingsOpen = false
     bluetoothPanelOpen = false
+    notificationPanelOpen = false
+}
+
+function toggleCalendarPopup() {
+    calendarPopupOpen = !calendarPopupOpen
+    if (calendarPopupOpen) barVisible = true
+    batteryTooltipVisible = false
+    quickSettingsOpen = false
+    bluetoothPanelOpen = false
+    wifiSelectorOpen = false
+    notificationPanelOpen = false
+}
+
+function toggleNotificationPanel() {
+    notificationPanelOpen = !notificationPanelOpen
+    if (notificationPanelOpen) barVisible = true
+    batteryTooltipVisible = false
+    quickSettingsOpen = false
+    bluetoothPanelOpen = false
+    wifiSelectorOpen = false
+    calendarPopupOpen = false
 }
 ```
 

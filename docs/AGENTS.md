@@ -17,11 +17,12 @@
 - Reload Hyprland: `Super + Shift + R` (restarts Hyprland)
 - Toggle bar: `Super + O` (Quickshell bar visibility)
 - Toggle media visualizer: `Super + M` (slides in from right)
-- Toggle QuickSettings: `Super + N`
-- Toggle Bluetooth panel: `Super + B`
+- Toggle notification panel: `Super + A`
 - Toggle Calendar popup: Click time in bar
-- Lock screen: `Super + L` (hyprlock)
+- Cycle workspaces: `Super + Tab` / `Super + Shift + Tab`
+- Lock screen: `Super + Shift + P` (hyprlock)
 - Suspend: `Super + Shift + L`
+- Restart Quickshell: `Ctrl + Super + R`
 - Test Quickshell: `quickshell -c mrtrotid-shell -v`
 
 ## Configuration Locations
@@ -43,24 +44,27 @@
 ## Quickshell Config Structure
 All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.config/quickshell/{custom,mrtrotid-shell}`):
 
-- `shell.qml` - **Single entry point**: one `PanelWindow` (fixed 600px height, Top layer, exclusiveZone 36) contains:
-  - `BarContent` (36px bar at top)
-  - Bluetooth Panel (Item, anchored below bar)
-  - QuickSettings Panel (Item, same area)
-  - Battery Tooltip (Item, same area)
-  - Auto-hide cursor timer
+- `shell.qml` - **Single entry point**: Each component runs in its own Wayland layer shell surface:
+  - `PanelWindow (main)` — Bar (exclusiveZone: 48, Top layer)
+  - `PanelWindow (blPopup)` — Bluetooth popup (exclusiveZone: 0)
+  - `PanelWindow (wifiPopup)` — WiFi popup (exclusiveZone: 0)
+  - `PanelWindow (notifPopup)` — Notification panel (exclusiveZone: 0)
+  - `PanelWindow (calPopup)` — Calendar popup (exclusiveZone: 0)
+  - `Window (MediaCard)` — Separate window for media card slide-in
+  - `GlobalShortcut` handlers — IPC from keybinds.conf
 - `BarContent.qml` - Bar contents: workspace/clock/volume/backlight/battery/bt/tray/network/notifs
 - `ServiceContext.qml` - Inline state store (replaces old `state/ShellState.qml` via `shellState: this`)
-- `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml, NotificationPanel.qml
+- `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml, NotificationPanel.qml, WorkspaceOverview.qml
 - `calendar/` - weather.sh, .env (OpenWeatherMap config)
 - `functions/ColorUtils.qml` - Color utilities
 
 ### Key Architecture Rules
-- **No separate Windows for popups** - Bluetooth/QS/Tooltip are all `Item` children of the main PanelWindow
+- **Each popup is its own PanelWindow** with `exclusiveZone: 0` for independent input regions (Wayland layer shell limitation)
 - **No separate `state/ShellState.qml`** - State is inline in ServiceContext (accessed as `ctx?.shellState.*` = `ctx.*`)
 - **All service logic in BarContent.qml** - Avoids cross-file type resolution issues
 - **Popups use opacity fade** (not height animation) to avoid flicker
 - **QML property scope**: property declarations on a parent Item are NOT visible inside Repeater delegates or nested layouts — always prefix with parent id (`bl._surf`, `qs._prim`, etc.)
+- **GlobalShortcut uses `onPressed`** (not `onActivated`) — name is bare action (e.g., `barToggle`), not `quickshell:barToggle`
 
 ### Key Decisions
 - `ctx.shellState` resolves to `ctx` itself via `readonly property var shellState: this` on ServiceContext
@@ -68,6 +72,9 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - Colors are hardcoded hex (#1a2120 etc.) matching current matugen theme — NOT color-generated files
 - Media Card remains as a separate Window (for slide-in animation with `Behavior on x`)
 - `bl._adapter?.devices?.values ?? []` to access Bluetooth device list, filter by `.paired`
+- **All keybinds in one file** (`hypr/keybinds.conf`) for cheatsheet generation
+- **Shell toggles use global IPC** (`global, quickshell:<action>`) — no QML Shortcut elements
+- **Brightness/volume have independent poll timers** — keybinds run commands externally via Hyprland exec, bypassing Quickshell
 
 ## Verification
 - Check if changes survived wallpaper switch: Run `wallset` → pick same/wallpaper

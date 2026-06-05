@@ -61,7 +61,7 @@ quickshell -c mrtrotid-shell
 Keybinds:
 - `Super + O` — Toggle bar
 - `Super + M` — Toggle media player
-- `Super + N` — Toggle QuickSettings
+- `Super + N` — Toggle WiFi selector
 - `Super + B` — Toggle Bluetooth panel
 - `Super + L` — Lock screen (hyprlock)
 - `Super + Shift + L` — Suspend

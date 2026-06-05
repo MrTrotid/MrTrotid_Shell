@@ -18,7 +18,7 @@ ShellRoot {
     readonly property real barTopMargin: 10
     readonly property real barHeight: 36
     readonly property real barGap: 4
-    readonly property real popupY: barTopMargin + barHeight + 10
+    readonly property real popupGap: 2
     readonly property real sideMargin: 8
     readonly property real sw: Quickshell.screens[0]?.width ?? 1920
 
@@ -29,7 +29,7 @@ ShellRoot {
         id: main
         screen: Quickshell.screens[0]
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: ctx?.barVisible ? 36 : 0
+        exclusiveZone: ctx?.barVisible ? (barTopMargin + barHeight + popupGap) : 0
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
@@ -103,7 +103,6 @@ ShellRoot {
 
         anchors.top: true
         anchors.right: true
-        margins.top: popupY
         margins.right: 16
         implicitWidth: (sw - 16) * 0.4
         implicitHeight: visible ? 500 : 0
@@ -133,7 +132,6 @@ ShellRoot {
 
         anchors.top: true
         anchors.right: true
-        margins.top: popupY
         margins.right: 16
         implicitWidth: (sw - 16) * 0.4
         implicitHeight: visible ? 500 : 0
@@ -163,7 +161,6 @@ ShellRoot {
 
         anchors.top: true
         anchors.right: true
-        margins.top: popupY
         margins.right: 16
         implicitWidth: 360
         implicitHeight: visible ? 590 : 0
@@ -192,7 +189,6 @@ ShellRoot {
 
         anchors.top: true
         anchors.left: true
-        margins.top: popupY
         margins.left: (sw - ((sw - 16) * 0.70 + 20)) / 2
         implicitWidth: (sw - 16) * 0.70 + 20
         implicitHeight: visible ? 500 : 0
@@ -221,10 +217,23 @@ ShellRoot {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  KEYBINDS
+    //  GLOBAL SHORTCUTS (matched by keybinds.conf global IPC)
     // ═══════════════════════════════════════════════════════════════
-    Shortcut { sequence: "Super+O"; onActivated: ctx?.toggleBar() }
-    Shortcut { sequence: "Super+M"; onActivated: ctx?.toggleMediaCard() }
-    Shortcut { sequence: "Super+N"; onActivated: ctx?.toggleWifiSelector() }
-    Shortcut { sequence: "Super+B"; onActivated: ctx?.toggleBluetoothPanel() }
+    GlobalShortcut {
+        name: "barToggle"
+        description: "Toggle bar visibility"
+        onPressed: ctx?.toggleBar()
+    }
+
+    GlobalShortcut {
+        name: "notificationPanelToggle"
+        description: "Toggle notification panel"
+        onPressed: ctx?.toggleNotificationPanel()
+    }
+
+    GlobalShortcut {
+        name: "mediaControlsToggle"
+        description: "Toggle media card"
+        onPressed: ctx?.toggleMediaCard()
+    }
 }
