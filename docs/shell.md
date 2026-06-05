@@ -6,20 +6,20 @@ The root entry point for the Quickshell configuration. Each component (bar, popu
 ## Architecture
 ```
 ShellRoot
-├── ServiceContext (id: ctx)              — Shared state store
-├── PanelWindow (id: main)               — Bar (exclusiveZone: 48 when visible)
-│   ├── BarContent                       — The 36px top bar
-│   └── Auto-hide cursor logic           — Shows bar when cursor nears top
-├── PanelWindow (blPopup)                — Bluetooth popup (exclusiveZone: 0)
-│   └── BluetoothSelector                — BT device picker
-├── PanelWindow (wifiPopup)              — WiFi popup (exclusiveZone: 0)
-│   └── WifiSelector                     — WiFi network picker
-├── PanelWindow (notifPopup)             — Notification panel (exclusiveZone: 0)
-│   └── NotificationPanel                — Tools + Notifications + Power
-├── PanelWindow (calPopup)               — Calendar popup (exclusiveZone: 0)
-│   └── CalendarPopup                    — Calendar/Weather/Time
-├── Window (MediaCard)                   — Separate window for media card slide-in
-└── GlobalShortcuts                      — IPC handlers for keybinds.conf
+├── import "services"                    — Singleton services (BrightnessService, VolumeService, etc.)
+├── PanelWindow (id: main)              — Bar (exclusiveZone: 48 when visible)
+│   ├── BarContent                      — The 36px top bar (binds to singletons)
+│   └── Auto-hide cursor logic          — Shows bar when cursor nears top
+├── PanelWindow (blPopup)               — Bluetooth popup (exclusiveZone: 0)
+│   └── BluetoothSelector               — BT device picker
+├── PanelWindow (wifiPopup)             — WiFi popup (exclusiveZone: 0)
+│   └── WifiSelector                    — WiFi network picker
+├── PanelWindow (notifPopup)            — Notification panel (exclusiveZone: 0)
+│   └── NotificationPanel               — Tools + Notifications + Power
+├── PanelWindow (calPopup)              — Calendar popup (exclusiveZone: 0)
+│   └── CalendarPopup                   — Calendar/Weather/Time
+├── Window (MediaCard)                  — Separate window for media card slide-in
+└── GlobalShortcuts                     — IPC handlers for keybinds.conf
 ```
 
 ## Properties
@@ -290,7 +290,7 @@ The bar's `exclusiveZone` automatically recalculates: `barTopMargin + barHeight 
 1. Add a new `PanelWindow` with `exclusiveZone: 0`
 2. Set `anchors.top: true` and appropriate horizontal anchors
 3. Add unique `WlrLayershell.namespace: "custom:your-popup"`
-4. Add toggle function in `ServiceContext.qml`
+4. Add `togglePopup("yourpopup")` calls in ShellState (or use existing `openPopup`)
 5. Add `GlobalShortcut` element with `name` and `onPressed`
 6. Add corresponding `bind = ..., global, quickshell:<name>` in `keybinds.conf`
 

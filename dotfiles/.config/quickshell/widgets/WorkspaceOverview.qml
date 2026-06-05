@@ -6,7 +6,6 @@ import Quickshell.Io
 
 Rectangle {
     id: root
-    property var serviceContext
     color: "#1a2120"
     radius: 20
 

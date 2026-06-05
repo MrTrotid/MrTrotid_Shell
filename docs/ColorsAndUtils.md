@@ -125,13 +125,14 @@ Solves for the overlay color needed to achieve `targetColor` when placed over `b
 
 ### Usage
 ```qml
-ServiceContext {
-    property var colorUtils: ColorUtils {}
-}
+import "functions"
 
-// In other files:
-serviceContext.colorUtils.mix(color1, color2, 0.5)
+// In any QML file:
+property var colorUtils: ColorUtils {}
+colorUtils.mix(color1, color2, 0.5)
 ```
+
+**Note:** ColorUtils is a standalone utility, not a singleton service. Import it directly from `functions/`.
 
 ---
 

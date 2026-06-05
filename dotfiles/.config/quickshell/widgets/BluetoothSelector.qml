@@ -7,8 +7,6 @@ import Quickshell.Io
 Item {
     id: root
 
-    property var serviceContext
-
     readonly property color _base:    "#131514"
     readonly property color _crust:   "#1c1e1d"
     readonly property color _surf1:   "#232524"

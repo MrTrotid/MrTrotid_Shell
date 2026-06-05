@@ -7,7 +7,6 @@ import Quickshell.Services.Mpris
 Item {
     id: root
 
-    property var serviceContext
     property MprisPlayer player: null
     property list<var> visualizerPoints: []
     property bool isPlaying: player?.isPlaying ?? false

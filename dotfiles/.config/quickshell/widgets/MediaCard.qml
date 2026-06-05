@@ -7,7 +7,6 @@ import Quickshell.Services.Mpris
 Item {
     id: root
 
-    property var serviceContext
     property var player: (Mpris.mprisList ?? [])[0] ?? null
     property list<var> visualizerPoints
 
@@ -33,7 +32,6 @@ Item {
 
         PlayerCard {
             id: playerCard
-            serviceContext: serviceContext
             Layout.fillWidth: true
             Layout.preferredHeight: 120
         }

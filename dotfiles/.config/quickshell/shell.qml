@@ -9,11 +9,10 @@ import Quickshell.Services.SystemTray
 import Quickshell.Services.Mpris
 import Quickshell.Bluetooth
 import "widgets"
+import "services"
 
 ShellRoot {
     id: root
-
-    ServiceContext { id: ctx }
 
     readonly property real barTopMargin: 10
     readonly property real barHeight: 36
@@ -29,7 +28,7 @@ ShellRoot {
         id: main
         screen: Quickshell.screens[0]
         exclusionMode: ExclusionMode.Normal
-        exclusiveZone: ctx?.barVisible ? (barTopMargin + barHeight + popupGap) : 0
+        exclusiveZone: ShellState.barVisible ? (barTopMargin + barHeight + popupGap) : 0
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Top
@@ -43,12 +42,11 @@ ShellRoot {
         margins.left: sideMargin
         margins.right: sideMargin
 
-        implicitHeight: ctx?.barVisible ? barHeight + barTopMargin : 0
+        implicitHeight: ShellState.barVisible ? barHeight + barTopMargin : 0
 
         // ── BAR CONTENT ──
         BarContent {
             id: barContent
-            serviceContext: ctx
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
@@ -61,18 +59,12 @@ ShellRoot {
         Timer {
             interval: 100; running: true; repeat: true
             onTriggered: {
-                if (!ctx?.shellState) return
                 var y = Hyprland.cursor?.pos?.y ?? -1
                 if (y <= 2) {
-                    if (!main.cursorNearTop) { main.cursorNearTop = true; ctx.barVisible = true }
+                    if (!main.cursorNearTop) { main.cursorNearTop = true; ShellState.barVisible = true }
                     hideTimer.stop()
-                } else if (y > 50 && main.cursorNearTop && !ctx.keepBarVisible) {
-                    if (ctx.anyPopupOpen) {
-                        ctx.bluetoothPanelOpen = false
-                        ctx.wifiSelectorOpen = false
-                        ctx.calendarPopupOpen = false
-                        ctx.notificationPanelOpen = false
-                    }
+                } else if (y > 50 && main.cursorNearTop && !ShellState.keepBarVisible) {
+                    if (ShellState.anyPopupOpen) ShellState.closePopup()
                     main.cursorNearTop = false
                     hideTimer.running = true
                 }
@@ -80,9 +72,9 @@ ShellRoot {
         }
 
         Timer { id: hideTimer; interval: 1500; repeat: false; onTriggered: {
-            if (!main.cursorNearTop && ctx?.shellState) {
-                ctx.barVisible = false
-                ctx.batteryTooltipVisible = false
+            if (!main.cursorNearTop) {
+                ShellState.barVisible = false
+                ShellState.batteryTooltipVisible = false
             }
         }}
     }
@@ -93,7 +85,7 @@ ShellRoot {
     PanelWindow {
         id: blPopup
         screen: Quickshell.screens[0]
-        visible: ctx?.bluetoothPanelOpen ?? false
+        visible: ShellState.bluetoothPanelOpen
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
@@ -110,7 +102,6 @@ ShellRoot {
         BluetoothSelector {
             id: blInner
             anchors.fill: parent
-            serviceContext: ctx
         }
 
         onVisibleChanged: { if (visible) blInner.show() }
@@ -122,7 +113,7 @@ ShellRoot {
     PanelWindow {
         id: wifiPopup
         screen: Quickshell.screens[0]
-        visible: ctx?.wifiSelectorOpen ?? false
+        visible: ShellState.wifiSelectorOpen
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
@@ -139,7 +130,6 @@ ShellRoot {
         WifiSelector {
             id: wifiSelInner
             anchors.fill: parent
-            serviceContext: ctx
         }
 
         onVisibleChanged: { if (visible) wifiSelInner.show() }
@@ -151,7 +141,7 @@ ShellRoot {
     PanelWindow {
         id: notifPopup
         screen: Quickshell.screens[0]
-        visible: ctx?.notificationPanelOpen ?? false
+        visible: ShellState.notificationPanelOpen
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
@@ -179,7 +169,7 @@ ShellRoot {
     PanelWindow {
         id: calPopup
         screen: Quickshell.screens[0]
-        visible: ctx?.calendarPopupOpen ?? false
+        visible: ShellState.calendarPopupOpen
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
@@ -206,14 +196,14 @@ ShellRoot {
     // ═══════════════════════════════════════════════════════════════
     Window {
         id: mediaCard
-        visible: ctx?.mediaCardOpen ?? false
+        visible: ShellState.mediaCardOpen
         color: "transparent"
         width: 320; height: 200
         flags: Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.WindowTransparentForInput
         x: 0; y: 0
         Behavior on x { NumberAnimation { duration: 400; easing.type: Easing.OutQuart } }
         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutQuart } }
-        MediaCard { serviceContext: ctx; anchors.fill: parent; anchors.margins: 4 }
+        MediaCard { anchors.fill: parent; anchors.margins: 4 }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -222,18 +212,18 @@ ShellRoot {
     GlobalShortcut {
         name: "barToggle"
         description: "Toggle bar visibility"
-        onPressed: ctx?.toggleBar()
+        onPressed: ShellState.toggleBar()
     }
 
     GlobalShortcut {
         name: "notificationPanelToggle"
         description: "Toggle notification panel"
-        onPressed: ctx?.toggleNotificationPanel()
+        onPressed: ShellState.toggleNotificationPanel()
     }
 
     GlobalShortcut {
         name: "mediaControlsToggle"
         description: "Toggle media card"
-        onPressed: ctx?.toggleMediaCard()
+        onPressed: ShellState.toggleMediaCard()
     }
 }

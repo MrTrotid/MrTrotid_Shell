@@ -52,29 +52,36 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - `PanelWindow (calPopup)` — Calendar popup (exclusiveZone: 0)
   - `Window (MediaCard)` — Separate window for media card slide-in
   - `GlobalShortcut` handlers — IPC from keybinds.conf
-- `BarContent.qml` - Bar contents: workspace/clock/volume/backlight/battery/bt/tray/network/notifs
-- `ServiceContext.qml` - Inline state store (replaces old `state/ShellState.qml` via `shellState: this`)
+- `services/` - **Singleton services** (pragma Singleton + qmldir):
+  - `ShellState.qml` — UI toggle states (activePopup pattern for mutual exclusion)
+  - `BrightnessService.qml` — Brightness polling + control
+  - `VolumeService.qml` — Volume polling + control
+  - `NetworkService.qml` — nmcli monitoring
+  - `BatteryService.qml` — UPower + health (hasBattery fallback for desktop)
+  - `SystemService.qml` — CPU + memory from /proc
+- `BarContent.qml` - Bar layout (colors, workspace pills, clock) — binds to singleton services
 - `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml, NotificationPanel.qml, WorkspaceOverview.qml
 - `calendar/` - weather.sh, .env (OpenWeatherMap config)
 - `functions/ColorUtils.qml` - Color utilities
+- `reload.sh` - Restart Quickshell for testing
 
 ### Key Architecture Rules
 - **Each popup is its own PanelWindow** with `exclusiveZone: 0` for independent input regions (Wayland layer shell limitation)
-- **No separate `state/ShellState.qml`** - State is inline in ServiceContext (accessed as `ctx?.shellState.*` = `ctx.*`)
-- **All service logic in BarContent.qml** - Avoids cross-file type resolution issues
+- **Singleton services** — Each service is `pragma Singleton` + `services/qmldir` entry. Bar and popups import `"services"` and bind to singleton properties directly.
+- **ShellState.activePopup pattern** — Mutual exclusion via single string property (`"bluetooth" | "wifi" | "calendar" | "notification" | ""`). Derived booleans (`bluetoothPanelOpen`, etc.) provide backward compat.
+- **No more ServiceContext** — Replaced by singleton services. No prop drilling.
 - **Popups use opacity fade** (not height animation) to avoid flicker
-- **QML property scope**: property declarations on a parent Item are NOT visible inside Repeater delegates or nested layouts — always prefix with parent id (`bl._surf`, `qs._prim`, etc.)
+- **QML property scope**: property declarations on a parent Item are NOT visible inside Repeater delegates or nested layouts — always prefix with parent id
 - **GlobalShortcut uses `onPressed`** (not `onActivated`) — name is bare action (e.g., `barToggle`), not `quickshell:barToggle`
+- **Root type is `Item`** (not `QtObject` or `Singleton`) — QtObject doesn't support child elements, `Singleton` type not available in this Quickshell version
 
 ### Key Decisions
-- `ctx.shellState` resolves to `ctx` itself via `readonly property var shellState: this` on ServiceContext
-- Bluetooth scan: `adapter.discovering = value` (property toggle, no `startDiscovery()` available)
-- Colors are hardcoded hex (#1a2120 etc.) matching current matugen theme — NOT color-generated files
+- Colors are hardcoded hex (#1a2120 etc.) matching current matugen theme
 - Media Card remains as a separate Window (for slide-in animation with `Behavior on x`)
-- `bl._adapter?.devices?.values ?? []` to access Bluetooth device list, filter by `.paired`
 - **All keybinds in one file** (`hypr/keybinds.conf`) for cheatsheet generation
 - **Shell toggles use global IPC** (`global, quickshell:<action>`) — no QML Shortcut elements
 - **Brightness/volume have independent poll timers** — keybinds run commands externally via Hyprland exec, bypassing Quickshell
+- **BatteryService.hasBattery** — null guard for desktop/VM without battery
 
 ## Verification
 - Check if changes survived wallpaper switch: Run `wallset` → pick same/wallpaper

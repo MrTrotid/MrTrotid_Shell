@@ -1,0 +1,6 @@
+singleton BrightnessService BrightnessService.qml
+singleton VolumeService VolumeService.qml
+singleton NetworkService NetworkService.qml
+singleton BatteryService BatteryService.qml
+singleton SystemService SystemService.qml
+singleton ShellState ShellState.qml

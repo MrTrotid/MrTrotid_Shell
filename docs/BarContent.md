@@ -1,28 +1,29 @@
 # BarContent.qml - Top Bar
 
 ## Purpose
-The main status bar at the top of the screen. Three-section layout: left (Nix icon + clock + active window), center (workspaces + brightness + volume), right (CPU + memory + battery + bluetooth + wifi + notifications + tray).
+The main status bar at the top of the screen. Three-section layout: left (Nix icon + clock + active window), center (workspaces + brightness + volume), right (CPU + memory + battery + bluetooth + wifi + notifications + tray). All service logic lives in singleton services — BarContent is pure layout and UI.
 
 ## Architecture
 ```
 Item (root)
-├── State properties (time, brightness, volume, CPU, memory, network, etc.)
-├── Timers & Processes (polling/refreshing data)
+├── import "services"                     — Singleton services
+├── Color properties                      — Monochrome teal palette
+├── Local state (currentTime, activeWindowTitle, mprisPlayer)
 ├── LEFT SECTION (Row)
 │   ├── Nix icon capsule
 │   ├── Clock capsule
 │   └── Active window title
 ├── CENTER SECTION (Rectangle capsule)
 │   ├── Workspaces (6 pills, scroll to switch)
-│   ├── Brightness (scroll to adjust)
-│   └── Volume (scroll to adjust, click to mute)
+│   ├── Brightness → BrightnessService.brightnessPercent
+│   └── Volume → VolumeService.volumePercent
 └── RIGHT SECTION (Row in capsule)
-    ├── CPU % + icon
-    ├── Memory % + icon
-    ├── Battery pill (color-coded, hover for tooltip)
-    ├── Bluetooth icon (click to toggle BT popup)
-    ├── WiFi icon (click to toggle WiFi popup)
-    ├── Notifications icon (click to toggle QS)
+    ├── CPU % → SystemService.cpuPercent
+    ├── Memory % → SystemService.memoryPercent
+    ├── Battery pill → BatteryService.*
+    ├── Bluetooth → Bluetooth module + ShellState
+    ├── WiFi → NetworkService + ShellState
+    ├── Notifications → ShellState
     └── System tray (dynamic)
 ```
 
@@ -44,41 +45,20 @@ Item (root)
 | `colRed` | `#ffb59f` | Battery low |
 | `colForeground` | `#DDDCD0` | Active window title |
 
-## Data Sources
+## Data Sources (all in singleton services)
+BarContent has **no** timers, processes, or polling. All data comes from singletons:
 
-### Time
-- 1-second timer updates `currentTime` with `HH:MM ` format
+| Widget | Singleton | Property |
+|--------|-----------|----------|
+| Brightness | `BrightnessService` | `.brightnessPercent` |
+| Volume | `VolumeService` | `.volumePercent`, `.volumeMuted` |
+| CPU | `SystemService` | `.cpuPercent` |
+| Memory | `SystemService` | `.memoryPercent` |
+| Battery | `BatteryService` | `.batteryPercent`, `.hasBattery`, `.batteryDevice` |
+| WiFi | `NetworkService` | `.networkConnected` |
+| Bluetooth | `Quickshell.Bluetooth` | `Bluetooth.defaultAdapter?.enabled` |
 
-### Brightness
-- `brightnessctl g` (current) / `brightnessctl m` (max)
-- 150ms debounce timer after bar's own scroll/click changes
-- **Independent 300ms poll timer** — catches changes from keybinds (which run `brightnessctl` externally via Hyprland exec, bypassing Quickshell)
-- Scroll wheel on brightness text: ±5%
-
-### Volume
-- `wpctl get-volume @DEFAULT_AUDIO_SINK@`
-- **500ms poll timer** — catches changes from keybinds running `wpctl` externally
-- Parses `Volume: 0.80` and `[MUTED]` flag
-- Supports up to 150% (PipeWire allows over-amplification)
-- Scroll wheel: ±5%, click: toggle mute
-
-### CPU / Memory
-- Reads `/proc/stat` and `/proc/meminfo` every 3 seconds
-- CPU: Calculates delta between readings (user+nice+system+idle)
-- Memory: `(total - available) / total * 100`
-
-### Battery
-- Uses `UPower.displayDevice` from Quickshell
-- Color-coded: red (≤20%), yellow (≤70%), green (>70%)
-- Hover shows tooltip with health, remaining time, power plan
-- Health read from `/sys/class/power_supply/BAT*/energy_full_design`
-
-### Network
-- `nmcli monitor` for real-time changes
-- `nmcli -t -f ACTIVE,SIGNAL,SSID device wifi list` for details
-- Polls every 10 seconds + on nmcli event
-
-### Active Window
+### Active Window (local)
 - `hyprctl activewindow -j` on workspace/focus change
 - Displays `json.title` from output
 
@@ -97,22 +77,31 @@ Item (root)
 - Scroll wheel: `workspace r+1` / `workspace r-1`
 
 ### Battery Tooltip
-- `onEntered`: Sets `shellState.batteryTooltipText` and `batteryTooltipVisible = true`
-- `onExited`: Sets `batteryTooltipVisible = false`
-- Tooltip positioned at bottom-right of bar
+- Click toggles `ShellState.batteryTooltipVisible`
+- Sets `ShellState.batteryTooltipText` from `BatteryService.batteryTooltipText`
+- Collapsed: battery icon + percentage
+- Expanded: health, remaining time, power plan
 
 ### Right Section Icons
 | Icon | Codepoint | Click Action |
 |------|-----------|-------------|
-| Memory (three lines) | `\uF0C9` (fa-bars) | None (display only) |
-| Bluetooth | `\uF293` | `toggleBluetoothPanel()` |
-| WiFi | 󰤨/󰤭 (surrogate pairs) | `toggleWifiSelector()` |
-| Notifications | 󰂚 | `toggleNotificationPanel()` + keep bar visible |
+| CPU | (empty) | None (display only) |
+| Memory | `\uF0C9` (fa-bars) | None (display only) |
+| Bluetooth on | `\uF293` | `ShellState.toggleBluetoothPanel()` |
+| Bluetooth off | `\uF294` | `ShellState.toggleBluetoothPanel()` |
+| WiFi connected | 󰤨 (surrogate pair) | `ShellState.toggleWifiSelector()` |
+| WiFi disconnected | 󰤭 (surrogate pair) | `ShellState.toggleWifiSelector()` |
+| Notifications | 󰂚 (surrogate pair) | `ShellState.toggleNotificationPanel()` + keep bar visible |
+| Brightness high | `\uF185` | `BrightnessService.increaseBrightness()` |
+| Brightness low | `\uF186` | `BrightnessService.decreaseBrightness()` |
+| Volume high | `\uF028` | `VolumeService.toggleMute()` |
+| Volume low | `\uF027` | `VolumeService.toggleMute()` |
+| Volume muted | `\uF026` | `VolumeService.toggleMute()` |
 
-**Memory icon note:** The memory module uses `U+F0C9` (`fa-bars`, the three-line hamburger icon) matching the original waybar config. This is a BMP codepoint (< U+FFFF), so it can be represented as a simple `\uF0C9` escape in QML. Nerd Font icons above U+FFFF require surrogate pairs (e.g., `\uDB82\uDD28` for wifi icons).
+**Icon note:** All Nerd Font icons use `\uXXXX` escapes in QML. BMP codepoints (< U+FFFF) use simple escapes. Icons above U+FFFF require surrogate pairs (e.g., wifi icons).
 
 ## Modifying This File
-- To add a module: Add to the appropriate section (left/center/right)
+- To add a module: Add to the appropriate section (left/center/right), bind to a singleton property
 - To change colors: Modify the color properties at the top
-- To change polling intervals: Adjust timer `interval` values
 - To add a new right-section icon: Add a `Text` element with `MouseArea` in `rightRow`
+- **Do not add service logic here** — extract to a new singleton in `services/` instead
