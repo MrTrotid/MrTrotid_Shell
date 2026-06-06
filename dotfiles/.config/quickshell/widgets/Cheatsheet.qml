@@ -65,12 +65,14 @@ Item {
             name: "Workspaces",
             icon: "\uF24B",
             binds: [
-                { keys: "Super + 1-0",          desc: "Switch to workspace 1-10" },
-                { keys: "Super + Shift + 1-0",  desc: "Move window to workspace" },
-                { keys: "Super + Tab",           desc: "Next workspace" },
-                { keys: "Super + Shift + Tab",   desc: "Previous workspace" },
-                { keys: "Super + Page Up/Down",  desc: "Cycle workspaces" },
-                { keys: "Super + S",             desc: "Toggle scratchpad" }
+                { keys: "Super + 1-0",              desc: "Switch to workspace 1-10" },
+                { keys: "Super + Shift + 1-0",      desc: "Move window to workspace" },
+                { keys: "Super + Tab",              desc: "Next workspace" },
+                { keys: "Super + Shift + Tab",      desc: "Previous workspace" },
+                { keys: "Super + Page Up/Down",     desc: "Cycle workspaces" },
+                { keys: "Super + =/-",              desc: "Cycle workspaces" },
+                { keys: "Ctrl + Super + ←/→",      desc: "Move to adjacent workspace" },
+                { keys: "Super + S",                desc: "Toggle scratchpad" }
             ]
         },
         {
@@ -87,11 +89,12 @@ Item {
             name: "Screenshots",
             icon: "\uF030",
             binds: [
-                { keys: "Print",             desc: "Full screen (clipboard)", action: "bash ~/.config/scripts/screenshots/screenshot.sh full" },
-                { keys: "Ctrl + Print",      desc: "Region select",          action: "bash ~/.config/scripts/screenshots/screenshot.sh region" },
-                { keys: "Shift + Print",     desc: "Window select",          action: "bash ~/.config/scripts/screenshots/screenshot.sh window" },
-                { keys: "Alt + Print",       desc: "Monitor select",         action: "bash ~/.config/scripts/screenshots/screenshot.sh monitor" },
-                { keys: "Super + Shift + C", desc: "Color picker",           action: "hyprpicker -a" }
+                { keys: "Print",              desc: "Full screen (clipboard)", action: "bash ~/.config/scripts/screenshots/screenshot.sh full" },
+                { keys: "Ctrl + Print",       desc: "Region select",          action: "bash ~/.config/scripts/screenshots/screenshot.sh region" },
+                { keys: "Shift + Print",      desc: "Window select",          action: "bash ~/.config/scripts/screenshots/screenshot.sh window" },
+                { keys: "Alt + Print",        desc: "Monitor select",         action: "bash ~/.config/scripts/screenshots/screenshot.sh monitor" },
+                { keys: "Ctrl + Shift + Print", desc: "Annotate (swappy)",     action: "bash ~/.config/scripts/screenshots/screenshot.sh annotate" },
+                { keys: "Super + Shift + C",  desc: "Color picker",           action: "hyprpicker -a" }
             ]
         },
         {
