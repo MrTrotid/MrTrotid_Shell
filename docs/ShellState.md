@@ -7,7 +7,7 @@ Singleton managing all UI visibility states. Uses `activePopup` string pattern f
 ```
 Item (pragma Singleton)
 ├── barVisible, mediaCardOpen      — Simple toggles
-├── activePopup: string            — Mutual exclusion ("bluetooth" | "wifi" | "calendar" | "notification" | "")
+├── activePopup: string            — Mutual exclusion ("bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | "")
 ├── Derived booleans               — bluetoothPanelOpen, wifiSelectorOpen, etc.
 ├── Toggle functions               — togglePopup("name"), openPopup("name"), closePopup()
 ├── batteryTooltip*                — Battery tooltip state
@@ -32,6 +32,7 @@ Item (pragma Singleton)
 | `wifiSelectorOpen` | `activePopup === "wifi"` |
 | `calendarPopupOpen` | `activePopup === "calendar"` |
 | `notificationPanelOpen` | `activePopup === "notification"` |
+| `cheatsheetOpen` | `activePopup === "cheatsheet"` |
 | `anyPopupOpen` | `activePopup !== ""` |
 
 ## Functions
@@ -61,6 +62,7 @@ function toggleBluetoothPanel() { togglePopup("bluetooth") }
 function toggleWifiSelector() { togglePopup("wifi") }
 function toggleCalendarPopup() { togglePopup("calendar") }
 function toggleNotificationPanel() { togglePopup("notification") }
+function toggleCheatsheet() { togglePopup("cheatsheet") }
 ```
 
 ### keepBarTemporarily()

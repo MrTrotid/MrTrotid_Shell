@@ -10,14 +10,19 @@ ShellRoot
 ├── PanelWindow (id: main)              — Bar (exclusiveZone: 48 when visible)
 │   ├── BarContent                      — The 36px top bar (binds to singletons)
 │   └── Auto-hide cursor logic          — Shows bar when cursor nears top
+├── PanelWindow (popupOverlay)          — Full-screen transparent overlay for click-outside-to-close
 ├── PanelWindow (blPopup)               — Bluetooth popup (exclusiveZone: 0)
 │   └── BluetoothSelector               — BT device picker
 ├── PanelWindow (wifiPopup)             — WiFi popup (exclusiveZone: 0)
 │   └── WifiSelector                    — WiFi network picker
-├── PanelWindow (notifPopup)            — Notification panel (exclusiveZone: 0)
+├── PanelWindow (notifPopup)            — Notification panel (exclusiveZone: 0, exempt from overlay)
 │   └── NotificationPanel               — Tools + Notifications + Power
 ├── PanelWindow (calPopup)              — Calendar popup (exclusiveZone: 0)
 │   └── CalendarPopup                   — Calendar/Weather/Time
+├── PanelWindow (csPopup)               — Cheatsheet popup (exclusiveZone: 0, keyboard focus)
+│   └── Cheatsheet                      — Searchable keybind reference with executable actions
+├── PanelWindow (toastPopup)            — Notification toasts (stacked, exclusiveZone: 0)
+│   └── NotificationPopup               — Stacked notification cards
 ├── Window (MediaCard)                  — Separate window for media card slide-in
 └── GlobalShortcuts                     — IPC handlers for keybinds.conf
 ```
@@ -64,30 +69,144 @@ exclusiveZone = barTopMargin + barHeight + popupGap
 - Popup surface starts at: y=48 (right after the exclusive zone)
 - **Visible gap = popupGap = 2 pixels**
 
-### How to Adjust the Gap
+---
 
-| Goal | Change | Effect |
-|------|--------|--------|
-| **Decrease gap** (popup closer to bar) | Set `popupGap: 0` | Popup touches bar edge (y=46) |
-| **Negative gap** (popup overlaps bar) | Set `popupGap: -2` | Popup overlaps bar by 2px |
-| **Increase gap** (popup further from bar) | Set `popupGap: 8` | 8px gap between bar and popup |
-| **No gap at all** | Set `popupGap: 0` and ensure bar content fills exactly barHeight |
+## Popup Overlay (Click-Outside-to-Close)
 
-**Formula:** `exclusiveZone = barTopMargin + barHeight + popupGap`
+A full-screen transparent PanelWindow that enables click-outside-to-close behavior for all popups except the notification panel.
 
-### Why `margins.top` Was Removed from Popups
+### Configuration
+```qml
+PanelWindow {
+    id: popupOverlay
+    visible: ShellState.anyPopupOpen && !ShellState.notificationPanelOpen
+    exclusionMode: ExclusionMode.Normal
+    exclusiveZone: 0
+    color: "transparent"
 
-Previously, popup PanelWindows had `margins.top: popupY` where `popupY = barTopMargin + barHeight + 5`. This was removed because:
-1. `margins.top` on Wayland layer shell PanelWindows does not control surface position
-2. The compositor positions surfaces based on `exclusiveZone` of other surfaces on the same edge
-3. Having `margins.top` on popups was misleading and had no visible effect
-4. The bar's `exclusiveZone` is the single source of truth for popup vertical positioning
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.namespace: "custom:popup-overlay"
 
-### What `margins.top` IS Used For
+    anchors.top: true
+    anchors.left: true
+    anchors.right: true
+    anchors.bottom: true
 
-`margins.top` on the **bar** PanelWindow IS effective — it offsets the bar surface 10px from the screen top. This creates visual breathing room between the screen edge and the bar content.
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onClicked: ShellState.closePopup()
+    }
+}
+```
 
-For popups, `margins.right` and `margins.left` ARE used for horizontal positioning (e.g., calendar centered via `margins.left`, WiFi/BT right-aligned via `margins.right: 16`).
+### Behavior
+- **Visible when:** Any popup is open EXCEPT notification panel
+- **Click action:** Calls `ShellState.closePopup()` to dismiss the active popup
+- **Z-ordering:** Created before popup PanelWindows in shell.qml (lower z-order)
+- **Exemptions:** Notification panel stays open until explicitly dismissed
+
+### Why Notification Panel Is Exempt
+The notification panel is a persistent UI element that users may want to keep open while interacting with other parts of the desktop. It has its own close button and can be toggled via `Super + A`.
+
+---
+
+## Cheatsheet Popup
+
+Searchable keybind reference with executable actions and horizontal scrolling.
+
+### Configuration
+```qml
+PanelWindow {
+    id: csPopup
+    visible: ShellState.cheatsheetOpen
+    exclusiveZone: 0
+    color: "transparent"
+
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.namespace: "custom:cheatsheet"
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+    implicitWidth: (sw - 16) * 0.85 + 20   // 85% screen width
+    implicitHeight: visible ? 750 : 0
+}
+```
+
+### Key Features
+- **Keyboard focus:** `WlrKeyboardFocus.OnDemand` enables text input in search field
+- **Executable keybinds:** Apps, Session, Screenshots, Recording categories run commands on click
+- **Copy to clipboard:** Other categories copy key combo to clipboard
+- **Horizontal scrolling:** Mouse wheel translates to horizontal scroll
+- **Visible scrollbar:** Bottom scrollbar with hover opacity change
+
+### Category Data Structure
+```qml
+{
+    name: "Apps",
+    icon: "\uF120",
+    binds: [
+        { keys: "Super + Enter", desc: "Terminal (Ghostty)", action: "ghostty" },
+        // action field = execute command on click
+        // no action field = copy to clipboard on click
+    ]
+}
+```
+
+### Executable Categories
+| Category | Actions |
+|----------|---------|
+| Apps | ghostty, rofi, clipboard-picker, zen-browser, brave-browser, thunar, nvim |
+| Session | hyprlock, systemctl suspend/poweroff/reboot |
+| Screenshots | screenshot.sh full/region/window/monitor, hyprpicker |
+| Recording | recording.sh region/full |
+
+---
+
+## Notification Toasts
+
+Notification toasts appear below the bar and stack downward with a 10px offset.
+
+### PanelWindow Configuration
+- `margins.top: barTopMargin + barHeight - 6` — positions below the bar
+- `margins.left: (sw - 340) / 2` — horizontally centered
+- `implicitHeight: 64 + (count - 1) * 10` — grows with stacked notifications (max 3)
+
+### Toast Stacking
+- Each notification card is 64px tall
+- Cards stack with 10px offset: card 0 at y=0, card 1 at y=10, card 2 at y=20
+- Newest notification is always on top (index 0)
+- Maximum 3 visible at once; oldest is removed when a 4th arrives
+
+### Toast Design
+- **Background**: Solid `#1a1c1e` (opaque)
+- **Border**: Subtle white 8% opacity with top highlight edge
+- **App-based accent color**: Each notification type gets a distinct tint:
+  - Firefox/Chrome/Brave → Blue
+  - Discord/Telegram → Indigo
+  - Spotify/Music/Mpv → Green
+  - Kitty/Terminal → Teal
+  - Thunar/Files → Orange
+  - Screenshot → Light Blue
+  - Recording → Red
+  - Clipboard → Lime
+  - Volume/Audio → Purple
+  - Battery/Power → Yellow
+  - Default → Neutral glass
+- Accent applied to: icon background glow, icon text color
+
+### Toast Lifecycle
+- **Entry**: Slides in from y=-100 with 350ms ease-out + fade in over 300ms
+- **Reposition**: When index changes (new notification added/removed), existing cards animate to new y position over 250ms
+- **Exit**: After 3.5s, slides up to y=-100 over 300ms + fades out over 250ms, then removes from ListModel
+
+### File-based IPC
+Notifications come from external scripts writing to `/tmp/quickshell-notifications`:
+```
+id|title|body|icon
+```
+Quickshell polls every 200ms, deduplicates by ID, and auto-clears the file.
+
+Sound notification: `paplay /usr/share/sounds/freedesktop/stereo/message-new-instant.oga`
 
 ---
 
@@ -99,12 +218,6 @@ Each popup is a separate `PanelWindow` with `exclusiveZone: 0` to solve the **Wa
 
 By giving each popup its own layer shell surface with `exclusiveZone: 0`, it gets its own independent input region and can receive mouse clicks.
 
-### Why `exclusiveZone: 0` for Popups
-- `exclusiveZone: 0` means the surface does not reserve screen space
-- The compositor still renders it, and input events go to it when the cursor is over it
-- The bar's `exclusiveZone` (48 when visible) remains unchanged — it reserves space and gets input in that zone
-- Popup surfaces don't interfere with each other or the bar
-
 ---
 
 ## Layer Configuration
@@ -114,94 +227,13 @@ All PanelWindows use:
 
 Each popup has a unique `WlrLayershell.namespace`:
 - `custom:bar` — Bar surface
+- `custom:popup-overlay` — Click-outside-to-close overlay
 - `custom:bl-popup` — Bluetooth popup
 - `custom:wifi-popup` — WiFi popup
 - `custom:notif-popup` — Notification panel
 - `custom:cal-popup` — Calendar popup
-
----
-
-## Bar PanelWindow
-- `exclusiveZone: (barTopMargin + barHeight + popupGap)` when visible, `0` when hidden (auto-hide)
-  - = `10 + 36 + 2 = 48` when visible
-- `implicitHeight: barHeight + barTopMargin` when visible, `0` when hidden
-  - = `46` when visible
-- `anchors.top: true` with `margins.top: barTopMargin` (10)
-- `anchors.left: true`, `anchors.right: true` with `margins.left/right: sideMargin` (8)
-
-### Bar Geometry Breakdown
-```
-Screen top (y=0)
-├── y=0 to y=10:   Bar top margin (margins.top: 10)
-├── y=10 to y=46:  Bar content area (height: 36)
-├── y=46 to y=48:  Popup gap (popupGap: 2)
-├── y=48:          Popup surface starts here (after exclusiveZone)
-└── y=48 to y=548: Popup content area (height: 500)
-```
-
-The bar's `implicitHeight` (46) includes the top margin. The bar content (`BarContent`) is positioned at `anchors.top: parent.top` with `height: barHeight` (36), so it fills y=10 to y=46.
-
----
-
-## Popup PanelWindows
-- `exclusiveZone: 0` — no screen space reservation
-- `anchors.top: true` — anchored to screen top
-- No `margins.top` — surface position determined by bar's exclusiveZone
-- `anchors.right: true` for BT/WiFi/Notification (right-aligned)
-- `anchors.left: true` for Calendar (centered via `margins.left`)
-- `implicitHeight: visible ? <height> : 0` — collapses when hidden
-
-### Popup Dimensions
-| Popup | Width | Height | Horizontal Position |
-|-------|-------|--------|-------------------|
-| Bluetooth | `(sw - 16) * 0.4` | 500 | Right-aligned, `margins.right: 16` |
-| WiFi | `(sw - 16) * 0.4` | 500 | Right-aligned, `margins.right: 16` |
-| Notification | 360 | 590 | Right-aligned, `margins.right: 16` |
-| Calendar | `(sw - 16) * 0.70 + 20` | 500 | Centered via `margins.left` |
-
----
-
-## Popups
-Each popup PanelWindow contains an Item with:
-- `visible: ctx?.propertyName ?? false` — Controlled by ServiceContext
-- `anchors.fill: parent` — Fills the PanelWindow
-- `onVisibleChanged: { if (visible) inner.show() }` — Triggers staggered animations
-
-### Auto-hide with popups
-When cursor moves away:
-- If any popup is open: close all popups, keep bar visible
-- If no popups: start 1.5s hide timer for bar
-
-Opening a popup via keybind always sets `barVisible = true` so the bar is visible alongside the popup.
-
----
-
-## Notification Panel (replaces old QuickSettings)
-- Width: 360px, Height: 590px
-- Three sections:
-  - **Top**: Control tools grid (Mic, Night Light, DND, Color Picker, Screenshot)
-  - **Middle**: Notifications grouped by app (scrollable, iPhone-style)
-  - **Bottom**: Power buttons (Hibernate, Logout, Reboot, Power Off)
-- Uses `Quickshell.Services.Notifications.NotificationServer` for receiving notifications
-- Notifications are grouped by `appName` and displayed in a scrollable list
-- Click a notification to dismiss it
-
----
-
-## Lockscreen (hyprlock)
-- `Super+L` — Lock screen
-- `Super+Shift+L` — Suspend
-- Auto-lock after 5min idle via hypridle
-- Config: `~/.config/hypr/hyprlock.conf`
-- Blurred wallpaper background, clock bottom-left, password input bottom-right
-
----
-
-## Auto-Hide Logic
-A 100ms timer checks cursor Y position:
-- `y <= 2` → Show bar, stop hide timer
-- `y > 50` and cursor was near top → If any popup open, close all; then start 1..5s hide timer
-- Opening popup via keybind always shows bar (`barVisible = true`)
+- `custom:cheatsheet` — Cheatsheet popup
+- `custom:toast` — Notification toasts
 
 ---
 
@@ -211,9 +243,36 @@ All keybinds are defined in `hypr/keybinds.conf` (single file for cheatsheet gen
 ### Shell Toggles (Global IPC)
 | Key | Action | Handler |
 |-----|--------|---------|
-| `Super+O` | Toggle bar visibility | `barToggle` → `ctx.toggleBar()` |
-| `Super+A` | Toggle notification panel | `notificationPanelToggle` → `ctx.toggleNotificationPanel()` |
-| `Super+M` | Toggle media card | `mediaControlsToggle` → `ctx.toggleMediaCard()` |
+| `Super+O` | Toggle bar visibility | `barToggle` |
+| `Super+A` | Toggle notification panel | `notificationPanelToggle` |
+| `Super+M` | Toggle media card | `mediaControlsToggle` |
+| `Super+/` | Toggle cheatsheet | `cheatsheetToggle` |
+
+### Screen Recording
+| Key | Action |
+|-----|--------|
+| `Ctrl+Shift+R` | Region recording (select → pick audio → record) / Stop |
+| `Ctrl+Alt+R` | Full screen recording (pick audio → record) / Stop |
+
+### Screenshots
+| Key | Mode |
+|-----|------|
+| `Print` | Full screen to clipboard |
+| `Ctrl+Print` | Full screen to file |
+| `Shift+Print` | Region select |
+| `Alt+Print` | Window select |
+| `Ctrl+Shift+Print` | Monitor select |
+| `Ctrl+Alt+Print` | Timed full screen (5s delay) |
+
+### Clipboard
+| Key | Action |
+|-----|--------|
+| `Super+V` | Clipboard history picker (rofi + cliphist) |
+
+### App Launcher
+| Key | Action |
+|-----|--------|
+| `Super+Space` | Rofi app launcher |
 
 ### Window Management
 | Key | Action |
@@ -257,8 +316,6 @@ All keybinds are defined in `hypr/keybinds.conf` (single file for cheatsheet gen
 ### Other
 | Key | Action |
 |-----|--------|
-| `Print` | Screenshot to clipboard |
-| `Ctrl+Print` | Screenshot to file |
 | `Super+Shift+C` | Color picker (hyprpicker) |
 | `Ctrl+Super+R` | Restart Quickshell |
 
@@ -269,34 +326,3 @@ The media card is a separate `Window` (not PanelWindow) because it needs:
 - Slide-in animation from left (`Behavior on x`)
 - `Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.WindowTransparentForInput`
 - Independent positioning
-
----
-
-## Modifying This File
-
-### To change the gap between bar and popup
-Edit `popupGap` at the top of the file:
-```qml
-readonly property real popupGap: 2  // Change this value
-```
-The bar's `exclusiveZone` automatically recalculates: `barTopMargin + barHeight + popupGap`
-
-### To change bar height
-1. Modify `barHeight` property
-2. Update `BarContent.height` (should match `barHeight`)
-3. `exclusiveZone` auto-adjusts via formula
-
-### To add a new popup
-1. Add a new `PanelWindow` with `exclusiveZone: 0`
-2. Set `anchors.top: true` and appropriate horizontal anchors
-3. Add unique `WlrLayershell.namespace: "custom:your-popup"`
-4. Add `togglePopup("yourpopup")` calls in ShellState (or use existing `openPopup`)
-5. Add `GlobalShortcut` element with `name` and `onPressed`
-6. Add corresponding `bind = ..., global, quickshell:<name>` in `keybinds.conf`
-
-### To change popup horizontal position
-- **Right-aligned**: Use `anchors.right: true` with `margins.right: <offset>`
-- **Centered**: Use `anchors.left: true` with `margins.left: (sw - popupWidth) / 2`
-- **Left-aligned**: Use `anchors.left: true` with `margins.left: <offset>`
-
-### Each popup needs a unique `WlrLayershell.namespace` to avoid compositor conflicts

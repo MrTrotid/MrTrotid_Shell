@@ -250,19 +250,41 @@ Item {
                 }
             }
 
-            // Volume
+            // Volume + Sink switching
             Item {
                 anchors.verticalCenter: parent.verticalCenter
-                implicitWidth: volText.implicitWidth + 20
+                implicitWidth: volRow.implicitWidth + 20
                 implicitHeight: parent.height
 
-                Text {
-                    id: volText
+                Row {
+                    id: volRow
                     anchors.centerIn: parent
-                    text: VolumeService.volumeMuted ? "\uF026" : VolumeService.volumePercent + "% " + (VolumeService.volumePercent > 50 ? "\uF028" : "\uF027")
-                    color: VolumeService.volumeMuted ? colColor4 : colTertiary
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
+                    spacing: 8
+
+                    // Volume text
+                    Text {
+                        id: volText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            var vol = VolumeService.volumeMuted ? "MUTE" : VolumeService.volumePercent + "%"
+                            if (volMouseArea.containsMouse && AudioService.defaultSinkName)
+                                return vol + "  " + AudioService.defaultSinkName
+                            return vol
+                        }
+                        color: VolumeService.volumeMuted ? colColor4 : colTertiary
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14
+                    }
+
+                    // Sink icon
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: AudioService.sinkIcon(AudioService.defaultSinkName)
+                        color: colOnSurface
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
 
                 WheelHandler {
@@ -274,9 +296,20 @@ Item {
                 }
 
                 MouseArea {
+                    id: volMouseArea
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: VolumeService.toggleMute()
+                    hoverEnabled: true
+                    onClicked: {
+                        var sinks = AudioService.sinks
+                        if (sinks.length <= 1) return
+                        var currentIdx = -1
+                        for (var i = 0; i < sinks.length; i++) {
+                            if (sinks[i].isDefault) { currentIdx = i; break }
+                        }
+                        var nextIdx = (currentIdx + 1) % sinks.length
+                        AudioService.setDefaultSink(sinks[nextIdx].id)
+                    }
                 }
             }
         }
@@ -384,7 +417,18 @@ Item {
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: modelData.activate()
+                                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                onClicked: function(mouse) {
+                                    if (mouse.button === Qt.RightButton) {
+                                        if (modelData.hasMenu) {
+                                            modelData.display(trayMenuWindow, mouse.x, mouse.y)
+                                        } else {
+                                            modelData.secondaryActivate()
+                                        }
+                                    } else {
+                                        modelData.activate()
+                                    }
+                                }
                             }
                         }
                     }

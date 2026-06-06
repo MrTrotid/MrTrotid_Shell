@@ -52,6 +52,7 @@ BarContent has **no** timers, processes, or polling. All data comes from singlet
 |--------|-----------|----------|
 | Brightness | `BrightnessService` | `.brightnessPercent` |
 | Volume | `VolumeService` | `.volumePercent`, `.volumeMuted` |
+| Audio Sink | `AudioService` | `.sinks`, `.defaultSinkName`, `.sinkIcon()` |
 | CPU | `SystemService` | `.cpuPercent` |
 | Memory | `SystemService` | `.memoryPercent` |
 | Battery | `BatteryService` | `.batteryPercent`, `.hasBattery`, `.batteryDevice` |
@@ -94,9 +95,16 @@ BarContent has **no** timers, processes, or polling. All data comes from singlet
 | Notifications | 󰂚 (surrogate pair) | `ShellState.toggleNotificationPanel()` + keep bar visible |
 | Brightness high | `\uF185` | `BrightnessService.increaseBrightness()` |
 | Brightness low | `\uF186` | `BrightnessService.decreaseBrightness()` |
-| Volume high | `\uF028` | `VolumeService.toggleMute()` |
-| Volume low | `\uF027` | `VolumeService.toggleMute()` |
-| Volume muted | `\uF026` | `VolumeService.toggleMute()` |
+| Volume high | `\uF028` | Cycles to next sink |
+| Volume low | `\uF027` | Cycles to next sink |
+| Volume muted | `MUTE` text | Cycles to next sink |
+| Audio sink icon | dynamic per device | Hover for tooltip |
+
+**Volume interaction:**
+- Scroll: adjust volume
+- Click: cycle to next audio sink (headphones → speakers → HDMI → ...)
+- Hover: tooltip shows current sink name
+- Mute toggle: use `XF86AudioMute` keybind
 
 **Icon note:** All Nerd Font icons use `\uXXXX` escapes in QML. BMP codepoints (< U+FFFF) use simple escapes. Icons above U+FFFF require surrogate pairs (e.g., wifi icons).
 

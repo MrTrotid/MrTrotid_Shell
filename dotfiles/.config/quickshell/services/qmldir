@@ -4,3 +4,5 @@ singleton NetworkService NetworkService.qml
 singleton BatteryService BatteryService.qml
 singleton SystemService SystemService.qml
 singleton ShellState ShellState.qml
+singleton AudioService AudioService.qml
+singleton NotificationService NotificationService.qml

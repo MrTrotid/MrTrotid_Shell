@@ -1,0 +1,4 @@
+max-items: 10000
+max-dedupe-search: 1000
+min-store-length: 0
+preview-width: 100

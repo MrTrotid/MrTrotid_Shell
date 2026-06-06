@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Send a notification to Quickshell toast system
+# Usage: qs-notify "title" "body" [icon]
+# Icons: screenshot, recording, clipboard, success, error
+
+FIFO="/tmp/quickshell-notifications"
+
+title="${1:-Notification}"
+body="${2:-}"
+icon="${3:-}"
+id="$(date +%s%N | cut -c1-13)"
+
+echo "${id}|${title}|${body}|${icon}" >> "$FIFO"

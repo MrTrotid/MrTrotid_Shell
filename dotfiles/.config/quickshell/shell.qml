@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -51,6 +52,7 @@ ShellRoot {
             anchors.right: parent.right
             anchors.top: parent.top
             height: barHeight
+            property var trayMenuWindow: menuAnchor
         }
 
         // ── AUTO-HIDE ──
@@ -77,6 +79,46 @@ ShellRoot {
                 ShellState.batteryTooltipVisible = false
             }
         }}
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  MENU ANCHOR (hidden Window for tray menu display)
+    // ═══════════════════════════════════════════════════════════════
+    Window {
+        id: menuAnchor
+        visible: false
+        width: 1; height: 1
+        x: -100; y: -100
+        flags: Qt.Popup | Qt.FramelessWindowHint
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NOTIFICATION TOASTS (below bar, macOS-style)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: toastPopup
+        screen: Quickshell.screens[0]
+        visible: NotificationService.notifications.count > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "custom:toast"
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: barTopMargin + barHeight - 6
+        margins.left: (sw - 340) / 2
+
+        implicitWidth: 340
+        implicitHeight: 64 + (Math.min(NotificationService.notifications.count, 3) - 1) * 10
+
+        NotificationPopup {
+            id: toastContent
+            anchors.left: parent.left
+            anchors.top: parent.top
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
