@@ -17,7 +17,7 @@ Item {
         running: true
         command: ["nmcli", "monitor"]
         stdout: SplitParser {
-            onRead: nmPoll.running = true
+            onRead: nmPoll.restart()
         }
     }
 
@@ -47,11 +47,22 @@ Item {
                     root.networkConnected = false
                     return
                 }
-                var parts = line.split(":")
-                if (parts.length >= 3 && parts[0] === "yes") {
+                // Format: ACTIVE:SIGNAL:SSID (SSID may contain colons)
+                // Find first and second colon positions
+                var firstColon = line.indexOf(':')
+                var secondColon = line.indexOf(':', firstColon + 1)
+                if (firstColon === -1) {
+                    root.networkConnected = false
+                    return
+                }
+                var active = line.substring(0, firstColon)
+                var signal = secondColon === -1 ? line.substring(firstColon + 1) : line.substring(firstColon + 1, secondColon)
+                var ssid = secondColon === -1 ? "" : line.substring(secondColon + 1)
+
+                if (active === "yes") {
                     root.networkConnected = true
-                    root.networkStrength = parseInt(parts[1]) || 0
-                    root.networkSsid = parts[2]
+                    root.networkStrength = parseInt(signal) || 0
+                    root.networkSsid = ssid
                 } else {
                     root.networkConnected = false
                 }

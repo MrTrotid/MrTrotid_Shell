@@ -14,7 +14,7 @@ Item {
 
     // Poll — catches changes from keybinds (exec wpctl externally)
     Timer {
-        interval: 500
+        interval: 200
         running: true
         repeat: true
         onTriggered: if (!getVolumeCmd.running) getVolumeCmd.running = true
@@ -23,7 +23,7 @@ Item {
     // Debounce timer for immediate refresh after user action
     Timer {
         id: volRefresh
-        interval: 150
+        interval: 50
         repeat: false
         onTriggered: getVolumeCmd.running = true
     }
@@ -45,14 +45,14 @@ Item {
     }
 
     function increaseVolume() {
-        currentVolume = Math.min(1.5, currentVolume + 0.05)
-        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", currentVolume.toFixed(2)])
+        currentVolume = Math.min(1.5, currentVolume + 0.02)
+        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "2%+", "-l", "1.5"])
         volRefresh.running = true
     }
 
     function decreaseVolume() {
-        currentVolume = Math.max(0, currentVolume - 0.05)
-        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", currentVolume.toFixed(2)])
+        currentVolume = Math.max(0, currentVolume - 0.02)
+        Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "2%-"])
         volRefresh.running = true
     }
 

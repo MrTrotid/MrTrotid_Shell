@@ -20,13 +20,7 @@ Item {
         if (!hasBattery || !batteryDevice.ready) return ""
         var health = root.batteryHealth > 0 ? root.batteryHealth.toFixed(1) + "%" : "?"
         var r = root.isCharging ? "Idle" : root.fmtTime(batteryDevice?.timeToEmpty ?? 0)
-        return "Battery Health: " + health + "\nRemaining Time: " + r + "\nPower Plan: " + root.powerPlanLabel
-    }
-
-    readonly property string powerPlanLabel: {
-        if (PowerProfiles.profile === PowerProfile.PowerSaver) return "Power Saver"
-        if (PowerProfiles.profile === PowerProfile.Performance) return "Performance"
-        return "Balanced"
+        return "Battery Health: " + health + "\nRemaining Time: " + r
     }
 
     function fmtTime(seconds) {
@@ -36,10 +30,11 @@ Item {
         return (h > 0 ? h + "h " : "") + m + "m"
     }
 
-    // Read battery health from sysfs
+    // Read battery health from sysfs (refreshes every hour)
     Process {
+        id: healthProc
         command: ["sh", "-c", "for d in /sys/class/power_supply/BAT*; do if [ -f \"$d/energy_full_design\" ] && [ -f \"$d/energy_full\" ]; then ef=$(cat \"$d/energy_full\"); efd=$(cat \"$d/energy_full_design\"); elif [ -f \"$d/charge_full_design\" ] && [ -f \"$d/charge_full\" ]; then ef=$(cat \"$d/charge_full\"); efd=$(cat \"$d/charge_full_design\"); else continue; fi; if [ \"$efd\" -gt 0 ] 2>/dev/null; then int=$(( ef * 100 / efd )); dec=$(( (ef * 1000 / efd) % 10 )); echo \"$int.$dec\"; exit 0; fi; done; echo \"?\""]
-        running: true
+        running: false
         stdout: StdioCollector {
             onStreamFinished: {
                 var v = text.trim()
@@ -50,5 +45,13 @@ Item {
                 }
             }
         }
+    }
+
+    Timer {
+        interval: 3600000 // 1 hour
+        repeat: true
+        running: root.hasBattery
+        triggeredOnStart: true
+        onTriggered: if (!healthProc.running) healthProc.running = true
     }
 }

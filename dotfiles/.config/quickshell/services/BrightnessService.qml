@@ -22,9 +22,9 @@ Item {
         }
     }
 
-    // Independent poll — catches changes from keybinds (exec brightnessctl externally)
+    // Slow fallback poll — catches external changes (e.g. laptop function keys via other tools)
     Timer {
-        interval: 300
+        interval: 5000
         running: true
         repeat: true
         onTriggered: if (!getBrightness.running) getBrightness.running = true

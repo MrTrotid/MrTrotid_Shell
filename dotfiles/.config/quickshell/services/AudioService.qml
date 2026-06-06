@@ -29,40 +29,50 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 var lines = text.split("\n")
-                var inSinks = false
-                var inAudio = false
                 var result = []
                 var currentIds = []
+
+                // Find the Sinks section under Audio
+                // Strategy: look for "Sinks:" and parse lines after it until we hit another section header
+                var inSinksSection = false
+                var inAudioSection = false
 
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i]
 
-                    // Track Audio vs Video section (exact match only)
-                    var stripped = line.replace(/[\u2502\u251c\u2514\u2500\s]+/g, " ").trim()
-                    if (stripped === "Audio") {
-                        inAudio = true
-                        continue
-                    }
-                    if (stripped === "Video") {
-                        inAudio = false
-                        inSinks = false
+                    // Detect Audio/Video/Settings section boundaries
+                    var trimmed = line.trim()
+                    if (trimmed === "Audio" || trimmed === "Video" || trimmed === "Settings") {
+                        inAudioSection = (trimmed === "Audio")
+                        inSinksSection = false
                         continue
                     }
 
                     // Detect Sinks header (only in Audio section)
-                    if (inAudio && line.indexOf("Sinks:") !== -1) {
-                        inSinks = true
+                    if (inAudioSection && trimmed.indexOf("Sinks:") !== -1) {
+                        inSinksSection = true
                         continue
                     }
 
-                    // Parse sink lines
-                    if (inSinks) {
-                        // Skip subsection headers
-                        if ((line.indexOf("\u251c\u2500") !== -1 || line.indexOf("\u2514\u2500") !== -1) && line.indexOf("Sinks:") === -1) {
-                            inSinks = false
+                    // If we're in sinks section, look for sink entries
+                    if (inSinksSection) {
+                        // Check if we've hit another subsection (Sources, Filters, Streams)
+                        if (trimmed.indexOf("Sources:") !== -1 ||
+                            trimmed.indexOf("Filters:") !== -1 ||
+                            trimmed.indexOf("Streams:") !== -1) {
+                            inSinksSection = false
                             continue
                         }
-                        var match = stripped.match(/^([*]?)\s*(\d+)\.\s+(.+?)(?:\s+\[vol:\s*([\d.]+)\])?\s*$/)
+
+                        // Skip tree drawing chars, extract meaningful content
+                        // Match patterns like: " *  43. Built-in Audio Analog Stereo  [vol: 1.00]"
+                        // Or without volume: " *  43. Built-in Audio Analog Stereo"
+                        // The line may have ├─ or └─ or spaces before the content
+                        var content = line.replace(/^[\s\u2502\u251c\u2514\u2500]*/g, "").trim()
+                        if (content.length === 0) continue
+
+                        // Match sink entry: optional *, then ID. description [vol: X.XX]
+                        var match = content.match(/^([*]?)\s*(\d+)\.\s+(.+?)(?:\s+\[vol:\s*([\d.]+)\])?\s*$/)
                         if (match) {
                             var sinkId = parseInt(match[2])
                             var sinkDesc = match[3].trim()

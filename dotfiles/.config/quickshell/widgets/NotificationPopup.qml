@@ -10,48 +10,50 @@ Item {
 
     Repeater {
         id: repeater
-        model: NotificationService.notifications
+        model: NotificationService.toastList
 
         delegate: Item {
             id: notif
 
             required property int index
-            required property string title
+            required property int notificationId
+            required property string summary
             required property string body
-            required property string icon
+            required property string appIcon
+            required property string appName
 
             width: 320
             height: 64
             z: 100 - index
 
+            property string title: summary || ""
             property bool exiting: false
 
-            // ── app-based accent color ──
             readonly property color appAccent: {
-                var t = notif.title.toLowerCase()
+                var t = notif.appName.toLowerCase()
                 if (t.indexOf("firefox") >= 0 || t.indexOf("chrome") >= 0 || t.indexOf("brave") >= 0 || t.indexOf("browser") >= 0)
-                    return Qt.rgba(0.35, 0.55, 0.95, 1.0)   // blue
+                    return Qt.rgba(0.35, 0.55, 0.95, 1.0)
                 if (t.indexOf("discord") >= 0 || t.indexOf("telegram") >= 0 || t.indexOf("signal") >= 0)
-                    return Qt.rgba(0.55, 0.40, 0.95, 1.0)   // indigo
+                    return Qt.rgba(0.55, 0.40, 0.95, 1.0)
                 if (t.indexOf("spotify") >= 0 || t.indexOf("music") >= 0 || t.indexOf("mpv") >= 0 || t.indexOf("player") >= 0)
-                    return Qt.rgba(0.30, 0.85, 0.50, 1.0)   // green
+                    return Qt.rgba(0.30, 0.85, 0.50, 1.0)
                 if (t.indexOf("kitty") >= 0 || t.indexOf("terminal") >= 0 || t.indexOf("shell") >= 0)
-                    return Qt.rgba(0.30, 0.80, 0.75, 1.0)   // teal
+                    return Qt.rgba(0.30, 0.80, 0.75, 1.0)
                 if (t.indexOf("thunar") >= 0 || t.indexOf("nautilus") >= 0 || t.indexOf("file") >= 0)
-                    return Qt.rgba(0.90, 0.65, 0.30, 1.0)   // orange
+                    return Qt.rgba(0.90, 0.65, 0.30, 1.0)
                 if (t.indexOf("screenshot") >= 0 || t.indexOf("grim") >= 0 || t.indexOf("slurp") >= 0)
-                    return Qt.rgba(0.40, 0.70, 0.95, 1.0)   // light blue
+                    return Qt.rgba(0.40, 0.70, 0.95, 1.0)
                 if (t.indexOf("recording") >= 0 || t.indexOf("wf-recorder") >= 0)
-                    return Qt.rgba(0.95, 0.40, 0.40, 1.0)   // red
+                    return Qt.rgba(0.95, 0.40, 0.40, 1.0)
                 if (t.indexOf("clipboard") >= 0 || t.indexOf("cliphist") >= 0)
-                    return Qt.rgba(0.60, 0.80, 0.50, 1.0)   // lime
+                    return Qt.rgba(0.60, 0.80, 0.50, 1.0)
                 if (t.indexOf("network") >= 0 || t.indexOf("wifi") >= 0 || t.indexOf("bluetooth") >= 0)
-                    return Qt.rgba(0.50, 0.65, 0.95, 1.0)   // soft blue
+                    return Qt.rgba(0.50, 0.65, 0.95, 1.0)
                 if (t.indexOf("battery") >= 0 || t.indexOf("power") >= 0)
-                    return Qt.rgba(0.90, 0.80, 0.35, 1.0)   // yellow
+                    return Qt.rgba(0.90, 0.80, 0.35, 1.0)
                 if (t.indexOf("volume") >= 0 || t.indexOf("audio") >= 0 || t.indexOf("sound") >= 0)
-                    return Qt.rgba(0.80, 0.55, 0.90, 1.0)   // purple
-                return Qt.rgba(0.65, 0.70, 0.80, 1.0)       // neutral glass
+                    return Qt.rgba(0.80, 0.55, 0.90, 1.0)
+                return Qt.rgba(0.65, 0.70, 0.80, 1.0)
             }
 
             opacity: 0
@@ -130,31 +132,17 @@ Item {
                 duration: 250
                 easing.type: Easing.InCubic
                 onFinished: {
-                    NotificationService.removeNotification(notif.index)
+                    NotificationService.dismissToast(notif.notificationId)
                 }
             }
 
-            // ── glassy card ──
             Rectangle {
                 anchors.fill: parent
                 radius: 16
                 color: "#1a1c1e"
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                border.color: Qt.alpha(ColorService.outlineVariant, 0.3)
 
-                // top highlight edge
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    anchors.right: parent.right
-                    anchors.rightMargin: 16
-                    anchors.top: parent.top
-                    height: 1
-                    radius: 1
-                    color: Qt.rgba(1, 1, 1, 0.12)
-                }
-
-                // accent glow behind icon
                 Rectangle {
                     id: glowBg
                     anchors.left: parent.left
@@ -165,7 +153,6 @@ Item {
                     radius: 12
                     color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.12)
 
-                    // subtle border around icon
                     Rectangle {
                         anchors.fill: parent
                         radius: parent.radius
@@ -185,20 +172,36 @@ Item {
                     radius: 10
                     color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.15)
 
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        source: notif.appIcon !== "" ? notif.appIcon : ""
+                        sourceSize.width: 28
+                        sourceSize.height: 28
+                        fillMode: Image.PreserveAspectFit
+                        visible: notif.appIcon !== "" && status === Image.Ready
+                        asynchronous: true
+                    }
+
                     Text {
                         anchors.centerIn: parent
-                        text: {
-                            var ic = notif.icon
-                            if (ic === "screenshot") return "\uF030"
-                            if (ic === "recording") return "\uF03D"
-                            if (ic === "clipboard") return "\uF0EA"
-                            if (ic === "success") return "\uF00C"
-                            if (ic === "error") return "\uF00D"
-                            return "\uF130"
-                        }
+                        visible: notif.appIcon === "" || iconImg.status !== Image.Ready
+                        text: "\uF131"
                         color: notif.appAccent
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 16
+                    }
+
+                    Image {
+                        id: iconImg
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        source: notif.appIcon !== "" ? notif.appIcon : ""
+                        sourceSize.width: 28
+                        sourceSize.height: 28
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                        asynchronous: true
                     }
                 }
 
