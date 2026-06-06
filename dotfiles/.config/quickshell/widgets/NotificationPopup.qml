@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import "../services"
+import "../core/NotificationUtils.js" as Utils
 
 Item {
     id: root
@@ -28,6 +29,14 @@ Item {
 
             property string title: summary || ""
             property bool exiting: false
+            property var iconCandidates: Utils.getAppIconCandidates(notif.appName, notif.appIcon)
+            property int iconCandidateIdx: 0
+            property string resolvedIcon: {
+                var c = iconCandidates
+                if (c.length === 0) return ""
+                if (c.length === 1) return c[0]
+                return c[0]
+            }
 
             readonly property color appAccent: {
                 var t = notif.appName.toLowerCase()
@@ -173,35 +182,34 @@ Item {
                     color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.15)
 
                     Image {
+                        id: iconImg
                         anchors.fill: parent
                         anchors.margins: 4
-                        source: notif.appIcon !== "" ? notif.appIcon : ""
+                        source: {
+                            var c = notif.iconCandidates
+                            var idx = notif.iconCandidateIdx
+                            if (c.length === 0 || idx >= c.length) return ""
+                            return c[idx]
+                        }
                         sourceSize.width: 28
                         sourceSize.height: 28
                         fillMode: Image.PreserveAspectFit
-                        visible: notif.appIcon !== "" && status === Image.Ready
+                        visible: status === Image.Ready
                         asynchronous: true
+                        onStatusChanged: {
+                            if (status === Image.Error && notif.iconCandidateIdx < notif.iconCandidates.length - 1) {
+                                notif.iconCandidateIdx++
+                            }
+                        }
                     }
 
                     Text {
                         anchors.centerIn: parent
-                        visible: notif.appIcon === "" || iconImg.status !== Image.Ready
-                        text: "\uF131"
+                        visible: iconImg.status !== Image.Ready
+                        text: Utils.findSuitableIcon(notif.title)
                         color: notif.appAccent
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 16
-                    }
-
-                    Image {
-                        id: iconImg
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        source: notif.appIcon !== "" ? notif.appIcon : ""
-                        sourceSize.width: 28
-                        sourceSize.height: 28
-                        fillMode: Image.PreserveAspectFit
-                        visible: false
-                        asynchronous: true
                     }
                 }
 

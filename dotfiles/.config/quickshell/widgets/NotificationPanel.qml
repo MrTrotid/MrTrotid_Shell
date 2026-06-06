@@ -163,8 +163,35 @@ Item {
                                             radius: 19
                                             color: colSecondaryContainer
 
+                                            property var firstNotif: groupDelegate.notifs.length > 0 ? groupDelegate.notifs[0] : null
+                                            property var iconCandidates: firstNotif ? Utils.getAppIconCandidates(firstNotif.appName || groupDelegate.appName, firstNotif.appIcon || "") : []
+                                            property int iconIdx: 0
+
+                                            Image {
+                                                id: panelIconImg
+                                                anchors.fill: parent
+                                                anchors.margins: 5
+                                                source: {
+                                                    var c = parent.iconCandidates
+                                                    var idx = parent.iconIdx
+                                                    if (c.length === 0 || idx >= c.length) return ""
+                                                    return c[idx]
+                                                }
+                                                sourceSize.width: 28
+                                                sourceSize.height: 28
+                                                fillMode: Image.PreserveAspectFit
+                                                visible: status === Image.Ready
+                                                asynchronous: true
+                                                onStatusChanged: {
+                                                    if (status === Image.Error && parent.iconIdx < parent.iconCandidates.length - 1) {
+                                                        parent.iconIdx++
+                                                    }
+                                                }
+                                            }
+
                                             Text {
                                                 anchors.centerIn: parent
+                                                visible: panelIconImg.status !== Image.Ready
                                                 text: Utils.findSuitableIcon(groupDelegate.notifs.length > 0 ? groupDelegate.notifs[0].summary : "")
                                                 color: colOnPrimaryContainer
                                                 font.family: "JetBrainsMono Nerd Font"

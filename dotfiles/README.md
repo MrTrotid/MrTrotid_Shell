@@ -35,6 +35,10 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 | `Super + Shift + L` | Suspend |
 | `Ctrl + Super + R` | Restart Quickshell |
 | `Print` | Screenshot to clipboard |
+| `Ctrl + Print` | Region screenshot |
+| `Shift + Print` | Window screenshot |
+| `Ctrl + Shift + Print` | Annotate screenshot (swappy) |
+| `Alt + Print` | Monitor screenshot |
 | `Ctrl + Shift + R` | Region record / stop |
 | `Ctrl + Alt + R` | Full record / stop |
 
@@ -53,7 +57,7 @@ Full keybind list: see `hypr/keybinds.conf` or press `Super + /` in-shell.
 **Required for full functionality:**
 - `wl-clipboard`, `cliphist` - clipboard history
 - `playerctl`, `wpctl`, `brightnessctl` - media/audio/brightness
-- `grim`, `slurp`, `hyprpicker` - screenshots/region-select/color picker
+- `grim`, `slurp`, `hyprpicker`, `swappy` - screenshots/region-select/color picker/annotation
 - `nmcli` - network management
 - `wf-recorder` - screen recording
 - `rofi` - app launcher
@@ -144,6 +148,7 @@ Stacked notification toasts below the bar.
 - Real DBus notifications via NotificationService
 - Uses ListModel (max 3) - newest at top, oldest animates out on overflow
 - Nerd font icons only (no system appIcon mismatch)
+- Resolves app icons from system hicolor/pixmaps dirs; falls back to Nerd Font icons
 - Startup sound guard: 1.5s delay prevents replayed notifications from playing sound on reload
 </details>
 

@@ -41,6 +41,27 @@ case "${1:-full}" in
         grim -g "$GEOM" - | wl-copy --type image/png
         $NOTIFY "Screenshot" "Copied to clipboard" "screenshot"
         ;;
+    annotate)
+        GEOM=$(slurp -d -c '#81d5caAA' -b '#1a212080')
+        [[ -z "$GEOM" ]] && exit 0
+        FILE="$DIR/Annotate_$(date +%Y-%m-%d_%H.%M.%S).png"
+        grim -g "$GEOM" "$FILE"
+        mkdir -p /tmp/swappy_save
+        BEFORE=$(ls /tmp/swappy_save/ 2>/dev/null | sort)
+        swappy -f "$FILE"
+        AFTER=$(ls /tmp/swappy_save/ 2>/dev/null | sort)
+        if [ "$AFTER" != "$BEFORE" ]; then
+            NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
+            if [ -n "$NEW" ]; then
+                mv "/tmp/swappy_save/$NEW" "$FILE"
+                wl-copy --type image/png < "$FILE"
+                $NOTIFY "Screenshot" "Annotated screenshot saved" "screenshot"
+            fi
+        else
+            rm -f "$FILE"
+        fi
+        rm -rf /tmp/swappy_save
+        ;;
     *)
         echo "Usage: $0 {full|region|window|timer|monitor|copy}"
         exit 1
