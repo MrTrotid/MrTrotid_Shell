@@ -494,8 +494,11 @@ journalctl --user -u quickshell -f
 
 ## Credits
 
-- Shell design and QML: **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)** (illogical-impulse / ii)
-- Compositor: **[Hyprland](https://hyprland.org/)** + **hyprscrolling** plugin
-- QML framework: **[Quickshell](https://quickshell.org/)**
-- Material You generation: **[matugen](https://github.com/InioX/matugen)**
-- Trotid-specific config: Trotid team
+- **Calendar, Bluetooth, WiFi popups** — inspired by and adapted from **[ilyamiro/nixos-configuration](https://github.com/ilyamiro/nixos-configuration)**
+- **Bar design** — inspired by **[Noro18/linux-ricing-dotfiles](https://github.com/Noro18/linux-ricing-dotfiles/tree/main)**
+- **Shell framework and Material You theming** — **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)** (illogical-impulse / ii)
+- **Compositor** — **[Hyprland](https://hyprland.org/)** + **hyprscrolling** plugin
+- **QML framework** — **[Quickshell](https://quickshell.org/)**
+- **Material You color generation** — **[matugen](https://github.com/InioX/matugen)**
+- **Rofi themes** — **[adi1090x/rofi](https://github.com/adi1090x/rofi)** (type-1 launcher)
+- **Scripts** — screenshots, recording, clipboard picker built with `grim`, `slurp`, `wf-recorder`, `cliphist`
