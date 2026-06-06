@@ -22,9 +22,9 @@ Item {
         }
     }
 
-    // Slow fallback poll — catches external changes (e.g. laptop function keys via other tools)
+    // Fast poll — catches keybind changes
     Timer {
-        interval: 5000
+        interval: 200
         running: true
         repeat: true
         onTriggered: if (!getBrightness.running) getBrightness.running = true

@@ -15,6 +15,15 @@ Item {
     property int unread: 0
     property bool silent: false
     property var activePopup: null
+    property bool _startupPhase: true
+
+    Timer {
+        id: startupGuard
+        interval: 1500
+        running: true
+        repeat: false
+        onTriggered: root._startupPhase = false
+    }
 
     NotificationServer {
         id: notifServer
@@ -72,7 +81,8 @@ Item {
                 })
             }
 
-            Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"])
+            if (!root._startupPhase)
+                Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"])
         }
     }
 

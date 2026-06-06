@@ -10,8 +10,8 @@ Item {
     property string osdType: ""
     property int osdValue: 0
     property string osdIcon: ""
-    property int _prevVolume: -1
-    property int _prevBrightness: -1
+    property int _lastVolume: -1
+    property int _lastBrightness: -1
 
     Timer {
         id: hideTimer
@@ -20,31 +20,50 @@ Item {
         onTriggered: exitAnim.start()
     }
 
-    SequentialAnimation {
+    NumberAnimation {
         id: entryAnim
-        NumberAnimation { target: osdRect; property: "opacity"; from: 0; to: 1; duration: 200; easing.type: Easing.OutCubic }
-        NumberAnimation { target: osdRect; property: "y"; from: 20; to: 0; duration: 250; easing.type: Easing.OutCubic }
+        target: osdRect
+        property: "opacity"
+        from: 0; to: 1
+        duration: 150
+        easing.type: Easing.OutCubic
     }
 
-    SequentialAnimation {
+    NumberAnimation {
         id: exitAnim
-        NumberAnimation { target: osdRect; property: "opacity"; to: 0; duration: 200; easing.type: Easing.InCubic }
-        ScriptAction { script: root.showOsd = false }
+        target: osdRect
+        property: "opacity"
+        to: 0
+        duration: 200
+        easing.type: Easing.InCubic
+        onFinished: root.showOsd = false
+    }
+
+    function trigger(type, value, icon) {
+        root.osdType = type
+        root.osdValue = value
+        root.osdIcon = icon
+
+        if (root.showOsd) {
+            hideTimer.restart()
+            return
+        }
+
+        root.showOsd = true
+        osdRect.opacity = 1
+        entryAnim.start()
+        hideTimer.restart()
     }
 
     Connections {
         target: VolumeService
-        function onVolumeChanged() {
+        function onVolumePercentChanged() {
             var v = VolumeService.volumePercent
-            if (root._prevVolume !== -1 && v !== root._prevVolume) {
-                root.osdType = "volume"
-                root.osdValue = v
-                root.osdIcon = v === 0 ? "\uF6A9" : (v < 50 ? "\uF027" : "\uF028")
-                root.showOsd = true
-                entryAnim.start()
-                hideTimer.restart()
+            if (v !== root._lastVolume) {
+                var icon = v === 0 ? "\uF6A9" : (v < 50 ? "\uF027" : "\uF028")
+                root.trigger("volume", v, icon)
             }
-            root._prevVolume = v
+            root._lastVolume = v
         }
     }
 
@@ -52,15 +71,10 @@ Item {
         target: BrightnessService
         function onBrightnessPercentChanged() {
             var b = BrightnessService.brightnessPercent
-            if (root._prevBrightness !== -1 && b !== root._prevBrightness) {
-                root.osdType = "brightness"
-                root.osdValue = b
-                root.osdIcon = "\uF183"
-                root.showOsd = true
-                entryAnim.start()
-                hideTimer.restart()
+            if (b !== root._lastBrightness) {
+                root.trigger("brightness", b, "\uF183")
             }
-            root._prevBrightness = b
+            root._lastBrightness = b
         }
     }
 
@@ -118,7 +132,7 @@ Item {
                         color: ColorService.primary
 
                         Behavior on width {
-                            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
                         }
                     }
                 }
