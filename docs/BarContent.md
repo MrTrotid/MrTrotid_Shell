@@ -8,7 +8,7 @@ The main status bar at the top of the screen. Three-section layout: left (Nix ic
 Item (root)
 ├── import "services"                     — Singleton services
 ├── Color properties                      — Monochrome teal palette
-├── Local state (currentTime, activeWindowTitle, mprisPlayer)
+├── Local state (currentTime, mprisPlayer)
 ├── LEFT SECTION (Row)
 │   ├── Nix icon capsule
 │   ├── Clock capsule
@@ -59,9 +59,9 @@ BarContent has **no** timers, processes, or polling. All data comes from singlet
 | WiFi | `NetworkService` | `.networkConnected` |
 | Bluetooth | `Quickshell.Bluetooth` | `Bluetooth.defaultAdapter?.enabled` |
 
-### Active Window (local)
-- `hyprctl activewindow -j` on workspace/focus change
-- Displays `json.title` from output
+### Active Window
+- Direct property binding: `Hyprland.activeToplevel?.title ?? ""`
+- No Process{} needed — updates automatically on focus change
 
 ### System Tray
 - `SystemTray.items.values` from Quickshell

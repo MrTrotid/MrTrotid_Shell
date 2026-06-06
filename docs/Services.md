@@ -13,7 +13,7 @@ Extracted service logic from the old monolithic ServiceContext.qml and BarConten
 | `NetworkService` | `networkConnected`, `networkSsid`, `networkStrength` | `nmcli monitor` + poll | event + 10s |
 | `BatteryService` | `batteryDevice`, `hasBattery`, `isCharging`, `batteryPercent`, `batteryHealth` | UPower + sysfs | one-shot |
 | `SystemService` | `cpuPercent`, `memoryPercent` | `/proc/stat`, `/proc/meminfo` | 2s |
-| `NotificationService` | `notifications` (ListModel) | `/tmp/quickshell-notifications` | 200ms poll |
+| `NotificationService` | `notifications` (ListModel) | DBus NotificationServer | on-demand | Receives real notifications via DBus |
 | `ShellState` | UI toggle states (see ShellState.md) | — | — |
 
 ## qmldir

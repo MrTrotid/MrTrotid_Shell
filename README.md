@@ -7,10 +7,11 @@ A custom Hyprland + Quickshell desktop shell — singleton service architecture,
 - **Hyprland 0.55+** with scrolling layout, gestures, layerrules
 - **Quickshell 0.3.0** — singleton services, global IPC, Wayland layer shell
 - **Material You** color scheme via matugen (auto-generates M3 colors from wallpaper)
-- **Notification system** with persistent history, popups, file-based IPC
+- **Notification system** with DBus server, grouped notifications, toasts
+- **Coverflow wallpaper picker** with thumbnails and filter bar
+- **Quick Actions HUD** with keyboard navigation and executable actions
 - **Cheatsheet** — searchable keybind reference with executable actions
 - **Click-outside-to-close** for all popups (except notification panel)
-- **AI sidebar**, **clipboard history**, **OCR/screen translate**, **on-screen keyboard**, **AI image tools**, and more
 
 ---
 
@@ -22,8 +23,10 @@ A custom Hyprland + Quickshell desktop shell — singleton service architecture,
 | `Super + Space` | App launcher (Rofi) |
 | `Super + /` | Toggle Cheatsheet |
 | `Super + A` | Toggle notification panel |
+| `Super + J` | Toggle quick actions HUD |
 | `Super + O` | Toggle bar |
 | `Super + M` | Toggle media card |
+| `Ctrl + Super + T` | Toggle wallpaper picker |
 | `Super + V` | Clipboard history |
 | `Super + W` | Browser (Zen) |
 | `Super + E` | File manager (Thunar) |
@@ -46,44 +49,17 @@ Full keybind list: see `hypr/keybinds.conf` or press `Super + /` in-shell.
 | Quickshell | 0.3.0 | install via `quickshell-git` from AUR |
 | matugen | latest | generates Material You colors |
 | Qt 6 | — | Quickshell dependency |
+| swaybg | latest | wallpaper setter |
 
-<details>
-<summary><strong>Required for end-4 features (click to expand)</strong></summary>
+**Required for full functionality:**
 
-- `swww` — wallpaper daemon
-- `hypridle` — idle/lock daemon
-- `hyprsunset` — color temperature toggle
-- `hyprpolkitagent` — polkit authentication prompts
-- `mako` — fallback notification daemon
-- `waybar`, `wofi`, `fuzzel` — only for legacy fallbacks
-- `wl-clipboard`, `cliphist`, `playerctl`, `wpctl`, `brightnessctl` — clipboard/media/audio/brightness
+- `wl-clipboard`, `cliphist` — clipboard history
+- `playerctl`, `wpctl`, `brightnessctl` — media/audio/brightness
 - `grim`, `slurp`, `hyprpicker` — screenshots/region-select/color picker
 - `nmcli` — network management
-- `tesseract` — OCR (region OCR)
-- `ollama` (optional) — local AI for sidebar/AI features
-- `python-requests`, `python-pillow` — for AI scripts
-
-</details>
-
----
-
-## Installation
-
-```bash
-# Copy shell directory to your preferred location
-cp -r ~/Desktop/Trotid_Shell ~/.local/share/
-
-# Install ly session entry (requires sudo)
-sudo cp ~/Desktop/Trotid_Shell/trotid-shell.desktop /etc/ly/custom-sessions/
-
-# Make startup script executable
-chmod +x ~/Desktop/Trotid_Shell/start-trotid.sh
-
-# Generate initial Material You colors
-matugen image /path/to/your/wallpaper.png
-```
-
-Select **"Trotid Shell"** from the ly login manager session picker.
+- `wf-recorder` — screen recording
+- `rofi` — app launcher
+- `ImageMagick` — wallpaper thumbnails
 
 ---
 
@@ -91,8 +67,6 @@ Select **"Trotid Shell"** from the ly login manager session picker.
 
 ```
 Trotid_Shell/
-├── start-trotid.sh              # Session startup
-├── trotid-shell.desktop          # Ly session entry
 ├── hypr/                         # Hyprland configuration
 │   ├── hyprland.conf             # Layout, animations, decoration, exec-once
 │   ├── keybinds.conf             # All keybindings (single file for cheatsheet)
@@ -100,11 +74,37 @@ Trotid_Shell/
 └── quickshell/                   # Quickshell configuration
     ├── shell.qml                 # Root shell — all PanelWindows + GlobalShortcuts
     ├── BarContent.qml            # Bar layout (binds to singleton services)
+    ├── Caching.qml               # Cache/state directory management
+    ├── core/
+    │   └── NotificationUtils.js  # Time formatting and icon mapping
     ├── services/                 # Singleton services (pragma Singleton + qmldir)
-    ├── widgets/                  # Popup widgets (Bluetooth, WiFi, Calendar, etc.)
+    │   ├── ShellState.qml        # UI toggle states (activePopup pattern)
+    │   ├── AudioService.qml      # wpctl parsing, sink switching
+    │   ├── BrightnessService.qml # Brightness polling + control
+    │   ├── VolumeService.qml     # Volume polling + control
+    │   ├── NetworkService.qml    # nmcli monitoring
+    │   ├── BatteryService.qml    # UPower + sysfs
+    │   ├── SystemService.qml     # CPU + memory from /proc
+    │   ├── NotificationService.qml # DBus notification server
+    │   ├── ColorService.qml      # matugen colors.json reader (2s polling)
+    │   └── qmldir                # Singleton declarations
+    ├── widgets/                  # Popup widgets
+    │   ├── BluetoothSelector.qml
+    │   ├── WifiSelector.qml
+    │   ├── CalendarPopup.qml
+    │   ├── NotificationPanel.qml # Nandoroid-style grouped notifications
+    │   ├── NotificationPopup.qml # Toast notifications (ListModel, max 3)
+    │   ├── WallpaperPicker.qml   # Coverflow carousel with thumbnails
+    │   ├── QuickActions.qml      # Bottom-center floating action bar
+    │   ├── Cheatsheet.qml        # Searchable keybind reference
+    │   ├── MediaCard.qml
+    │   ├── PlayerCard.qml
+    │   ├── WaveVisualizer.qml
+    │   ├── WorkspaceOverview.qml
+    │   └── Colors.qml
     ├── calendar/                 # Weather scripts + OpenWeatherMap config
-    ├── functions/                # Color utilities
-    └── reload.sh                 # Restart Quickshell for testing
+    └── functions/
+        └── ColorUtils.qml        # Color utilities
 ```
 
 ---
@@ -122,21 +122,27 @@ The top bar is a Wayland layer shell surface with `exclusiveZone: 48` (reserves 
 - Auto-hide: Cursor near top shows bar; cursor 50px+ away hides it after 1.5s
 - `keepBarTemporarily()` prevents hide during popup interaction (5s timer)
 - Volume click cycles audio sinks; hover shows sink name
-- Battery tooltip shows health info on hover
+- Battery: hardcoded green/yellow/red independent of colorscheme, text uses `colOnPrimary`
+- Window title: capped at 416px max width
+- WiFi icon: solid `colPrimary` color matching Bluetooth
 - System tray: left-click activates, right-click calls `secondaryActivate()`
 
-**Colors:** Hardcoded hex matching current matugen theme (`#1a2120` base, `#81d5ca` accent)
+**Colors:** Bound to ColorService (Material You from matugen)
 
 </details>
 
 <details>
-<summary><strong>Popup Overlay (click-outside-to-close)</strong></summary>
+<summary><strong>Popup Click-Outside-to-Close</strong></summary>
 
-A full-screen transparent PanelWindow that sits behind all popups. When any popup (except notification panel) is open, the overlay becomes active. Clicking anywhere on it closes the current popup.
+Popups close when the cursor moves away from the top edge of the screen (y > 50).
 
-**Exemptions:** Notification panel is exempt — it stays open until explicitly closed via `Super + A` or its close button.
+**How it works:**
+- Bar PanelWindow has a 100ms Timer that monitors cursor position
+- When cursor is near top (y ≤ 2): show bar, mark `cursorNearTop = true`
+- When cursor moves away (y > 50): close any open popup, start hide timer
+- No overlay PanelWindow needed — avoids Wayland layer shell input conflicts
 
-**Z-ordering:** Created before popup PanelWindows in shell.qml so it sits behind them in the Wayland layer stack.
+**Exemptions:** Notification panel stays open until explicitly dismissed via `Super+A`.
 
 </details>
 
@@ -173,12 +179,14 @@ WiFi network selector with nmcli integration.
 <details>
 <summary><strong>Notification Panel</strong></summary>
 
-Full notification center with history, tools, and power controls.
+Nandoroid-style grouped notification panel with slide+fade animation.
 
 **Features:**
-- Notification history with grouped display
-- Quick tools (screenshot, recording, etc.)
-- Power menu (lock, suspend, poweroff, reboot)
+- Notifications grouped by app name with expand/collapse chevron
+- Single notification: summary in header, body only in item
+- Multiple: app name + summary+body per item
+- Bottom action row: silent toggle, count pill, clear all
+- Slide+fade animation via Loader with states/transitions
 - **Exempt from click-outside-to-close** — stays open until explicitly dismissed
 
 **Positioning:** Top-right, 360px width, 590px height
@@ -188,16 +196,47 @@ Full notification center with history, tools, and power controls.
 <details>
 <summary><strong>Notification Toasts</strong></summary>
 
-macOS-style stacked notification cards below the bar.
+Stacked notification toasts below the bar.
 
 **Features:**
-- File-based IPC: Scripts write to `/tmp/quickshell-notifications`, Quickshell polls every 200ms
-- App-based accent colors (Firefox→blue, Discord→indigo, Spotify→green, etc.)
-- Slide-in from y=-100, stack at y=`index*10`, max 3 visible
-- 3.5s auto-dismiss with slide-out animation
-- Sound notification via `paplay`
+- Real DBus notifications via `Quickshell.Services.Notifications.NotificationServer`
+- Uses ListModel (max 3) — newest at top, oldest animates out on overflow
+- Nerd font icons only (no system appIcon mismatch)
+- Slide+fade animations
 
 **Positioning:** Centered below bar, 340px width
+
+</details>
+
+<details>
+<summary><strong>Wallpaper Picker</strong></summary>
+
+Coverflow-style wallpaper selector with thumbnails.
+
+**Features:**
+- FolderListModel loading from `~/.cache/quickshell/wallpaper_picker/thumbs/`
+- Matrix4x4 skew transforms for coverflow effect
+- Filter bar: All / Landscapes / Nature / Dark / City
+- Apply via `swaybg` + `matugen image` for color generation
+- `Ctrl + Super + T` to toggle
+
+**Positioning:** Full-screen overlay
+
+</details>
+
+<details>
+<summary><strong>Quick Actions HUD</strong></summary>
+
+Floating bottom-center action bar with keyboard navigation.
+
+**Features:**
+- 7 action buttons: Full Screenshot, Region Screenshot, Open Screenshots, Record Region, Record Fullscreen, Open Recordings, Color Picker
+- Animated tab highlight with slide animation
+- Keyboard navigation: arrows, h/l, Enter to execute, Escape to close
+- Slide-up animation via Loader with states/transitions
+- `Super + J` to toggle
+
+**Positioning:** Bottom-center, 440px width, 60px height
 
 </details>
 
@@ -209,7 +248,7 @@ Calendar view with weather integration.
 **Features:**
 - Monthly calendar grid
 - Current time display
-- Weather data from OpenWeatherMap (Bhaktapur, Nepal)
+- Weather data from OpenWeatherMap
 
 **Positioning:** Centered, 70% screen width, 500px height
 
@@ -223,7 +262,7 @@ Searchable keybind reference with executable actions.
 **Features:**
 - 8 categories: Shell, Apps, Windows, Workspaces, Session, Screenshots, Recording, Hardware
 - Live filter-as-you-type search (TextField with keyboard focus via `WlrKeyboardFocus.OnDemand`)
-- **Executable keybinds:** Apps, Session, Screenshots, Recording categories run commands on click (play icon ▶)
+- **Executable keybinds:** Apps, Session, Screenshots, Recording categories run commands on click (play icon)
 - **Copy to clipboard:** Other categories copy key combo to clipboard on click
 - Horizontal scrolling with mouse wheel, visible scrollbar at bottom
 - Esc to close, auto-focus search on open
@@ -260,14 +299,20 @@ UI toggle states using `activePopup` string pattern for mutual exclusion.
 
 **Properties:**
 - `barVisible` — Bar visibility
-- `activePopup` — Current open popup (`"bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | ""`)
+- `activePopup` — Current open popup (`"bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | "wallpaper" | "quickactions" | ""`)
 - `mediaCardOpen` — Media card visibility
-- `batteryTooltip*` — Battery tooltip state
 - `keepBarVisible` — Temporary keep-alive flag
 
-**Derived booleans:** `bluetoothPanelOpen`, `wifiSelectorOpen`, `calendarPopupOpen`, `notificationPanelOpen`, `cheatsheetOpen`, `anyPopupOpen`
+**Derived booleans:** `bluetoothPanelOpen`, `wifiSelectorOpen`, `calendarPopupOpen`, `notificationPanelOpen`, `cheatsheetOpen`, `wallpaperPickerOpen`, `quickActionsOpen`, `anyPopupOpen`
 
-**Functions:** `togglePopup(name)`, `openPopup(name)`, `closePopup()`, `toggleBar()`, `toggleMediaCard()`, `keepBarTemporarily()`
+**Functions:** `togglePopup(name)`, `openPopup(name)`, `closePopup()`, `toggleBar()`, `toggleMediaCard()`, `keepBarTemporarily()`, `toggleQuickActions()`
+
+</details>
+
+<details>
+<summary><strong>ColorService.qml</strong></summary>
+
+Reads matugen `colors.json` with 2-second polling timer. All color properties named `*Text` to avoid QML signal handler conflicts.
 
 </details>
 
@@ -277,7 +322,7 @@ UI toggle states using `activePopup` string pattern for mutual exclusion.
 Audio sink management via `wpctl`.
 
 **Features:**
-- Parses `wpctl status` with Unicode box-drawing chars (`\u2502\u251c\u2514\u2500`)
+- Parses `wpctl status` with Unicode box-drawing chars
 - Sink switching via `wpctl set-default`
 - Auto-switch to Bluetooth on connect, auto-revert on disconnect
 - `sinkIcon()` maps device names to Nerd Font icons
@@ -287,14 +332,14 @@ Audio sink management via `wpctl`.
 <details>
 <summary><strong>BrightnessService.qml</strong></summary>
 
-Brightness polling (300ms) + control via `brightnessctl`.
+Brightness polling (5000ms) + control via `brightnessctl`.
 
 </details>
 
 <details>
 <summary><strong>VolumeService.qml</strong></summary>
 
-Volume polling (500ms) via `wpctl`.
+Volume polling (200ms) via `wpctl`, 2% increment.
 
 </details>
 
@@ -322,7 +367,7 @@ CPU + memory usage from `/proc` with 2s polling. Running guard prevents process 
 <details>
 <summary><strong>NotificationService.qml</strong></summary>
 
-File-based IPC notifications. Polls `/tmp/quickshell-notifications` every 200ms. ListModel-based for insert without destroying delegates. Sound playback via `paplay`.
+Real DBus notification server via `Quickshell.Services.Notifications.NotificationServer`. JS array `notifications` for panel + ListModel `toastList` (max 3) for toasts. Stores `appName`, `summary`, `body`, `appIcon`, `image`, `urgency`, `time`, `actions`. Has `groupsByAppName`, `appNameList` computed properties.
 
 </details>
 
@@ -340,9 +385,11 @@ All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell
 | Key | Mode |
 |-----|------|
 | `Print` | Full screen to clipboard |
-| `Ctrl+Print` | Region select |
-| `Shift+Print` | Window select |
-| `Alt+Print` | Monitor select |
+| `Ctrl+Print` | Full screen to file |
+| `Shift+Print` | Region select |
+| `Alt+Print` | Window select |
+| `Ctrl+Shift+Print` | Monitor select |
+| `Ctrl+Alt+Print` | Timed full screen (5s delay) |
 
 Saves to `~/Pictures/Screenshots/`, copies to clipboard via `wl-copy`.
 
@@ -395,18 +442,15 @@ Saves to `~/Videos/Recordings/`.
 - Popups have `exclusiveZone: 0` (placed by compositor after reserved zone)
 - `margins.top` on popups has zero effect on screen position
 
-**Gap between bar and popup** = `popupGap` (2px), controlled by bar's exclusiveZone calculation.
-
 </details>
 
 <details>
-<summary><strong>Popup Overlay System</strong></summary>
+<summary><strong>Popup Click-Outside-to-Close</strong></summary>
 
-Click-outside-to-close uses a transparent full-screen PanelWindow (`popupOverlay`) on `WlrLayer.Top`:
-- Visible when `ShellState.anyPopupOpen && !ShellState.notificationPanelOpen`
-- Clicking it calls `ShellState.closePopup()`
-- Created before popup PanelWindows (lower z-order)
-- Notification panel exempt (stays open until explicitly dismissed)
+Popups close when cursor moves away from top edge (y > 50):
+- Bar PanelWindow has 100ms Timer monitoring cursor position
+- No overlay PanelWindow — avoids Wayland layer shell input conflicts
+- Notification panel exempt (stays open until explicitly dismissed via `Super+A`)
 
 </details>
 
@@ -419,18 +463,14 @@ All keybinds in `hypr/keybinds.conf` (single file for cheatsheet generation). Sh
 
 </details>
 
----
-
-## Configuration
-
-User configuration is stored at `~/.config/illogical-impulse/config.json` (auto-generated on first run). Edit via:
-- **GUI**: Super + Slash → "Settings" (built-in settings panel)
-- **Direct**: Edit the JSON, then Ctrl+Super+R to reload
-
 <details>
-<summary><strong>Configuration categories (click to expand)</strong></summary>
+<summary><strong>Theming Pipeline</strong></summary>
 
-`appearance`, `transparency`, `fonts`, `wallpaperTheming`, `bar`, `dock`, `sidebar`, `ui`, `general`, `background`, `notifications`, `mediaControls`, `ai`, `screenRecorder`, `hyprland`, `keybinds`, `session`
+1. Wallpaper set via `wallset` or `wallset-backend-startup`
+2. `swaybg` updates wallpaper
+3. `matugen` generates Material You colors → ColorService reads `colors.json`
+4. `wallust` generates terminal colors → Kitty, Hyprland
+5. Components reload/apply on next start
 
 </details>
 
@@ -452,7 +492,7 @@ quickshell -c ~/Desktop/Trotid_Shell/quickshell/
 <summary><strong>Reload config without restarting</strong></summary>
 
 ```bash
-killall quickshell && quickshell -c ~/Desktop/Trotid_Shell/quickshell/ &
+pkill -x qs && quickshell -c ~/Desktop/Trotid_Shell/quickshell/ &
 ```
 
 </details>
@@ -460,7 +500,7 @@ killall quickshell && quickshell -c ~/Desktop/Trotid_Shell/quickshell/ &
 <details>
 <summary><strong>Icons showing as squares / missing</strong></summary>
 
-Edit `~/.config/illogical-impulse/config.json` `appearance.fonts.iconNerd` to a Nerd Font you have installed (e.g. `"JetBrainsMono Nerd Font"`, `"Hack Nerd Font"`, `"Symbols Nerd Font"`)
+Ensure JetBrainsMono Nerd Font is installed. Check with `fc-list | grep JetBrainsMono`.
 
 </details>
 
@@ -475,8 +515,17 @@ Edit `~/.config/illogical-impulse/config.json` `appearance.fonts.iconNerd` to a 
 <details>
 <summary><strong>Wallpaper switching fails</strong></summary>
 
-- Install `swww`: `yay -S swww` (requires sudo)
-- Or change `Directories.wallpaperSwitchScriptPath` in `Directories.qml` to your own script
+- Ensure `swaybg` is installed
+- Wallpaper thumbnails must be pre-generated in `~/.cache/quickshell/wallpaper_picker/thumbs/`
+
+</details>
+
+<details>
+<summary><strong>Colors not updating</strong></summary>
+
+- ColorService polls `colors.json` every 2 seconds
+- Ensure `matugen` is installed and `~/.config/quickshell/mrtrotid-shell/colors.json` exists
+- Check: `matugen image /path/to/wallpaper.png --prefer darkness`
 
 </details>
 
@@ -496,8 +545,10 @@ journalctl --user -u quickshell -f
 
 - **Calendar, Bluetooth, WiFi popups** — inspired by and adapted from **[ilyamiro/nixos-configuration](https://github.com/ilyamiro/nixos-configuration)**
 - **Bar design** — inspired by **[Noro18/linux-ricing-dotfiles](https://github.com/Noro18/linux-ricing-dotfiles/tree/main)**
-- **Shell framework and Material You theming** — **[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland)** (illogical-impulse / ii)
-- **Compositor** — **[Hyprland](https://hyprland.org/)** + **hyprscrolling** plugin
+- **Notification panel** — inspired by **[nandoroid](https://github.com/nandoroid/dotfiles)** (custom dependencies not available)
+- **Coverflow wallpaper picker** — inspired by ilyamiro's wallpaper carousel
+- **Quick Actions HUD** — custom implementation with nerd font icons
+- **Compositor** — **[Hyprland](https://hyprland.org/)**
 - **QML framework** — **[Quickshell](https://quickshell.org/)**
 - **Material You color generation** — **[matugen](https://github.com/InioX/matugen)**
 - **Rofi themes** — **[adi1090x/rofi](https://github.com/adi1090x/rofi)** (type-1 launcher)

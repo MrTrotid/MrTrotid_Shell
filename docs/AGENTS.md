@@ -47,7 +47,6 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 
 - `shell.qml` - **Single entry point**: Each component runs in its own Wayland layer shell surface:
   - `PanelWindow (main)` — Bar (exclusiveZone: 48, Top layer)
-  - `PanelWindow (popupOverlay)` — Full-screen transparent overlay for click-outside-to-close (behind popups)
   - `PanelWindow (blPopup)` — Bluetooth popup (exclusiveZone: 0)
   - `PanelWindow (wifiPopup)` — WiFi popup (exclusiveZone: 0)
   - `PanelWindow (notifPopup)` — Notification panel (exclusiveZone: 0, exempt from click-outside-to-close)
@@ -58,13 +57,13 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - `GlobalShortcut` handlers — IPC from keybinds.conf
 - `services/` - **Singleton services** (pragma Singleton + qmldir):
   - `ShellState.qml` — UI toggle states (activePopup pattern for mutual exclusion)
-  - `AudioService.qml` — wpctl sink enumeration, switching, Bluetooth auto-switch/revert
+  - `AudioService.qml` — wpctl text output parsing (robust section-based), sink switching, Bluetooth auto-switch/revert
   - `BrightnessService.qml` — Brightness polling + control
   - `VolumeService.qml` — Volume polling + control
   - `NetworkService.qml` — nmcli monitoring
   - `BatteryService.qml` — UPower + health (hasBattery fallback for desktop)
   - `SystemService.qml` — CPU + memory from /proc
-  - `NotificationService.qml` — File-based IPC notifications, sound playback
+  - `NotificationService.qml` — Real DBus notification server via `Quickshell.Services.Notifications`, sound playback
 - `BarContent.qml` - Bar layout (colors, workspace pills, clock) — binds to singleton services
 - `widgets/` - MediaCard.qml, PlayerCard.qml, WaveVisualizer.qml, CalendarPopup.qml, WifiSelector.qml, BluetoothSelector.qml, NotificationPanel.qml, NotificationPopup.qml, WorkspaceOverview.qml, Cheatsheet.qml
 - `calendar/` - weather.sh, .env (OpenWeatherMap config)
@@ -73,7 +72,7 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 
 ### Key Architecture Rules
 - **Each popup is its own PanelWindow** with `exclusiveZone: 0` for independent input regions (Wayland layer shell limitation)
-- **Popup overlay** — Full-screen transparent PanelWindow (`popupOverlay`) sits behind popups. Clicking it closes the active popup. Exempts notification panel.
+- **Popup click-outside-to-close** — Popups close when cursor moves away from top edge (y > 50). Bar auto-hide Timer checks cursor position every 100ms.
 - **Singleton services** — Each service is `pragma Singleton` + `services/qmldir` entry. Bar and popups import `"services"` and bind to singleton properties directly.
 - **ShellState.activePopup pattern** — Mutual exclusion via single string property (`"bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | ""`). Derived booleans (`bluetoothPanelOpen`, etc.) provide backward compat.
 - **No more ServiceContext** — Replaced by singleton services. No prop drilling.
@@ -93,8 +92,8 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **BatteryService.hasBattery** — null guard for desktop/VM without battery
 - **Audio via wpctl** — `Quickshell.Services.Pipewire` not available in this Quickshell version
 - **Click volume to cycle sinks** — most common action; mute via `XF86AudioMute` keybind
-- **File-based IPC for notifications** — scripts write to `/tmp/quickshell-notifications`, Quickshell polls every 200ms
-- **Popup click-outside-to-close** — Uses transparent overlay PanelWindow behind popups; clicking overlay closes active popup (except notification panel)
+- **Notification DBus server** — `Quickshell.Services.Notifications.NotificationServer` receives real notifications from any app
+- **Popup click-outside-to-close** — Popups close when cursor moves away from top edge (y > 50). Bar auto-hide Timer checks cursor position every 100ms.
 - **Cheatsheet uses horizontal scrolling** — Categories displayed side-by-side, mouse wheel scroll, visible scrollbar at bottom
 
 ## Scripts

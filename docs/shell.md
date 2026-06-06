@@ -9,13 +9,12 @@ ShellRoot
 ├── import "services"                    — Singleton services (BrightnessService, VolumeService, etc.)
 ├── PanelWindow (id: main)              — Bar (exclusiveZone: 48 when visible)
 │   ├── BarContent                      — The 36px top bar (binds to singletons)
-│   └── Auto-hide cursor logic          — Shows bar when cursor nears top
-├── PanelWindow (popupOverlay)          — Full-screen transparent overlay for click-outside-to-close
+│   └── Auto-hide cursor logic          — Shows bar when cursor nears top, closes popups when cursor away
 ├── PanelWindow (blPopup)               — Bluetooth popup (exclusiveZone: 0)
 │   └── BluetoothSelector               — BT device picker
 ├── PanelWindow (wifiPopup)             — WiFi popup (exclusiveZone: 0)
 │   └── WifiSelector                    — WiFi network picker
-├── PanelWindow (notifPopup)            — Notification panel (exclusiveZone: 0, exempt from overlay)
+├── PanelWindow (notifPopup)            — Notification panel (exclusiveZone: 0, exempt from auto-close)
 │   └── NotificationPanel               — Tools + Notifications + Power
 ├── PanelWindow (calPopup)              — Calendar popup (exclusiveZone: 0)
 │   └── CalendarPopup                   — Calendar/Weather/Time
@@ -71,40 +70,44 @@ exclusiveZone = barTopMargin + barHeight + popupGap
 
 ---
 
-## Popup Overlay (Click-Outside-to-Close)
+## Popup Click-Outside-to-Close
 
-A full-screen transparent PanelWindow that enables click-outside-to-close behavior for all popups except the notification panel.
+Popups close when the cursor moves away from the top edge of the screen (y > 50).
 
-### Configuration
+### How It Works
+The bar PanelWindow has a 100ms Timer that monitors cursor position:
+- When cursor is at y ≤ 2 (near top): show bar, set `cursorNearTop = true`
+- When cursor is at y > 50 (away from top): close any open popup, start hide timer
+
+This means:
+- **Opening a popup** via bar click or keybind keeps it open while cursor is near top
+- **Moving cursor away** from top edge closes the popup automatically
+- **No overlay needed** — the cursor position check handles all click-outside cases
+
+### Configuration (in bar PanelWindow)
 ```qml
-PanelWindow {
-    id: popupOverlay
-    visible: ShellState.anyPopupOpen && !ShellState.notificationPanelOpen
-    exclusionMode: ExclusionMode.Normal
-    exclusiveZone: 0
-    color: "transparent"
-
-    WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.namespace: "custom:popup-overlay"
-
-    anchors.top: true
-    anchors.left: true
-    anchors.right: true
-    anchors.bottom: true
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: ShellState.closePopup()
+Timer {
+    interval: 100; running: true; repeat: true
+    onTriggered: {
+        var y = Hyprland.cursor?.pos?.y ?? -1
+        if (y <= 2) {
+            if (!main.cursorNearTop) { main.cursorNearTop = true; ShellState.barVisible = true }
+            hideTimer.stop()
+        } else if (y > 50 && !ShellState.keepBarVisible) {
+            if (ShellState.anyPopupOpen) ShellState.closePopup()
+            if (main.cursorNearTop) {
+                main.cursorNearTop = false
+                hideTimer.running = true
+            }
+        }
     }
 }
 ```
 
 ### Behavior
-- **Visible when:** Any popup is open EXCEPT notification panel
-- **Click action:** Calls `ShellState.closePopup()` to dismiss the active popup
-- **Z-ordering:** Created before popup PanelWindows in shell.qml (lower z-order)
-- **Exemptions:** Notification panel stays open until explicitly dismissed
+- **Close trigger:** Cursor moves to y > 50 (away from top edge)
+- **No overlay PanelWindow** — avoids Wayland layer shell input conflicts
+- **Exemptions:** Notification panel stays open until explicitly dismissed via `Super+A`
 
 ### Why Notification Panel Is Exempt
 The notification panel is a persistent UI element that users may want to keep open while interacting with other parts of the desktop. It has its own close button and can be toggled via `Super + A`.
@@ -199,12 +202,12 @@ Notification toasts appear below the bar and stack downward with a 10px offset.
 - **Reposition**: When index changes (new notification added/removed), existing cards animate to new y position over 250ms
 - **Exit**: After 3.5s, slides up to y=-100 over 300ms + fades out over 250ms, then removes from ListModel
 
-### File-based IPC
-Notifications come from external scripts writing to `/tmp/quickshell-notifications`:
-```
-id|title|body|icon
-```
-Quickshell polls every 200ms, deduplicates by ID, and auto-clears the file.
+### Notification Server
+Notifications are received via DBus using `Quickshell.Services.Notifications.NotificationServer`. The service:
+- Listens for real DBus notifications from any app (Firefox, Discord, system, etc.)
+- Maps app names to icon types (screenshot, recording, clipboard, error, success)
+- Maintains a ListModel with max 3 visible notifications
+- Dismisses notifications on the DBus server after adding to the UI
 
 Sound notification: `paplay /usr/share/sounds/freedesktop/stereo/message-new-instant.oga`
 
@@ -227,7 +230,6 @@ All PanelWindows use:
 
 Each popup has a unique `WlrLayershell.namespace`:
 - `custom:bar` — Bar surface
-- `custom:popup-overlay` — Click-outside-to-close overlay
 - `custom:bl-popup` — Bluetooth popup
 - `custom:wifi-popup` — WiFi popup
 - `custom:notif-popup` — Notification panel
