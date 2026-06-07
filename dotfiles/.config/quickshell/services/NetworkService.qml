@@ -11,6 +11,11 @@ Item {
     property string networkSsid: ""
     property int networkStrength: 0
 
+    property int netDown: 0
+    property int netUp: 0
+    property var _prevRx: -1
+    property var _prevTx: -1
+
     // Monitor nmcli events for real-time changes
     Process {
         id: nmMonitor
@@ -35,6 +40,42 @@ Item {
         running: true
         repeat: true
         onTriggered: if (!nmUpdate.running) nmUpdate.running = true
+    }
+
+    // Net speed poll every 2s
+    Timer {
+        interval: 2000
+        running: true
+        repeat: true
+        onTriggered: if (!netSpeed.running) netSpeed.running = true
+    }
+
+    Process {
+        id: netSpeed
+        command: ["cat", "/proc/net/dev"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var lines = text.split("\n")
+                for (var i = 0; i < lines.length; i++) {
+                    var l = lines[i].trim()
+                    if (l.indexOf("wlan0:") === 0) {
+                        var parts = l.split(/\s+/)
+                        var rx = parseInt(parts[1])
+                        var tx = parseInt(parts[9])
+                        if (!isNaN(rx) && !isNaN(tx)) {
+                            if (root._prevRx >= 0) {
+                                root.netDown = Math.round((rx - root._prevRx) / 2000)
+                                root.netUp = Math.round((tx - root._prevTx) / 2000)
+                            }
+                            root._prevRx = rx
+                            root._prevTx = tx
+                        }
+                        break
+                    }
+                }
+            }
+        }
     }
 
     Process {
@@ -73,5 +114,6 @@ Item {
 
     Component.onCompleted: {
         nmUpdate.running = true
+        netSpeed.running = true
     }
 }

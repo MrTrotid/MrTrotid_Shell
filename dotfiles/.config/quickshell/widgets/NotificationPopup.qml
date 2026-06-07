@@ -22,9 +22,11 @@ Item {
             required property string body
             required property string appIcon
             required property string appName
+            required property var actions
+            required property string urgency
 
             width: 320
-            height: 64
+            height: 64 + (notif.actions && notif.actions.length > 0 ? 28 : 0)
             z: 100 - index
 
             property string title: summary || ""
@@ -115,8 +117,9 @@ Item {
 
             Timer {
                 id: dismissTimer
-                interval: 3500
+                interval: notif.urgency === "critical" ? 15000 : 3500
                 repeat: false
+                running: notif.urgency !== "critical"
                 onTriggered: {
                     notif.exiting = true
                     exitAnim.start()
@@ -149,8 +152,8 @@ Item {
                 anchors.fill: parent
                 radius: 16
                 color: "#1a1c1e"
-                border.width: 1
-                border.color: Qt.alpha(ColorService.outlineVariant, 0.3)
+                border.width: notif.urgency === "critical" ? 2 : 1
+                border.color: notif.urgency === "critical" ? Qt.rgba(0.95, 0.30, 0.30, 0.8) : Qt.alpha(ColorService.outlineVariant, 0.3)
 
                 Rectangle {
                     id: glowBg
@@ -239,6 +242,43 @@ Item {
                         elide: Text.ElideRight
                         width: parent.width
                         visible: text.length > 0
+                    }
+
+                    Row {
+                        visible: notif.actions && notif.actions.length > 0
+                        spacing: 6
+                        anchors.topMargin: 2
+
+                        Repeater {
+                            model: notif.actions || []
+
+                            delegate: Rectangle {
+                                required property var modelData
+                                width: actionLabel.implicitWidth + 16
+                                height: 22
+                                radius: 6
+                                color: actionMouse.containsMouse ? Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.25) : Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.10)
+                                border.width: 1
+                                border.color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.2)
+
+                                Text {
+                                    id: actionLabel
+                                    anchors.centerIn: parent
+                                    text: modelData.text || ""
+                                    color: notif.appAccent
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                }
+
+                                MouseArea {
+                                    id: actionMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: NotificationService.attemptInvokeAction(notif.notificationId, modelData.identifier)
+                                }
+                            }
+                        }
                     }
                 }
             }

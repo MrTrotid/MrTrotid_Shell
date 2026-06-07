@@ -13,54 +13,26 @@ import "services"
 Item {
     id: root
 
-    // ── Colors ──
-    property color colSurfaceContainer: "#1a2120"
-    property color colSurfaceContainerHighest: "#303635"
-    property color colOnSurface: "#dde4e2"
-    property color colOnPrimary: "#003732"
-    property color colPrimary: "#81d5ca"
-    property color colTertiary: "#aec9e6"
-    property color colError: "#ffb4ab"
-    property color colColor3: "#578466"
-    property color colColor4: "#2D8948"
-    property color colSuccess: "#92d5ab"
-    property color colBlue: "#96ccf8"
-    property color colYellow: "#bccf81"
-    property color colRed: "#ffb59f"
-    property color colForeground: "#DDDCD0"
+    // ── Colors (bound to matugen via ColorService) ──
+    property color colSurfaceContainer: ColorService.surfaceContainer
+    property color colSurfaceContainerHighest: ColorService.surfaceContainerHighest
+    property color colOnSurface: ColorService.surfaceText
+    property color colOnPrimary: ColorService.primaryText
+    property color colPrimary: ColorService.primary
+    property color colTertiary: ColorService.tertiary
+    property color colError: ColorService.error
+    property color colColor3: ColorService.outline
+    property color colColor4: ColorService.primaryContainer
+    property color colSuccess: ColorService.success
+    property color colBlue: ColorService.blue
+    property color colYellow: ColorService.yellow
+    property color colRed: ColorService.red
+    property color colForeground: ColorService.surfaceText
 
     // ── Local state (UI only) ──
     property string currentTime: "00:00"
-    property string activeWindowTitle: ""
     property var mprisPlayer: (Mpris.mprisList && Mpris.mprisList.length > 0) ? Mpris.mprisList[0] : null
     readonly property var focusedWorkspaceId: Hyprland.focusedMonitor?.activeWorkspace?.id ?? 1
-
-    // ── Active window tracking ──
-    Connections {
-        target: Hyprland
-        function onActiveToplevelChanged() { refreshActiveWindow.running = true }
-        function onFocusedWorkspaceChanged() { refreshActiveWindow.running = true }
-    }
-
-    Process {
-        id: refreshActiveWindow
-        command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null || echo null"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var out = text.trim()
-                if (!out || out === "null") {
-                    activeWindowTitle = ""
-                } else {
-                    try {
-                        var json = JSON.parse(out)
-                        activeWindowTitle = json.title ?? ""
-                    } catch(e) {
-                        activeWindowTitle = ""
-                    }
-                }
-            }
-        }
-    }
 
     // ── Time ──
     Timer {
@@ -73,10 +45,6 @@ Item {
             var mm = String(d.getMinutes()).padStart(2, "0")
             currentTime = hh + ":" + mm + " "
         }
-    }
-
-    Component.onCompleted: {
-        refreshActiveWindow.running = true
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -142,14 +110,27 @@ Item {
         Item { width: 5; height: 1 }
 
         // Active window
-        Text {
+        Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            text: activeWindowTitle
-            color: colForeground
-            font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 14
-            elide: Text.ElideRight
-            visible: activeWindowTitle.length > 0
+            width: Math.min(winTitle.implicitWidth + 16, 416)
+            height: 26
+            radius: 20
+            color: colSurfaceContainer
+            visible: winTitle.text.length > 0
+
+            Text {
+                id: winTitle
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                text: Hyprland.activeToplevel?.title ?? ""
+                color: colOnSurface
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 14
+                elide: Text.ElideRight
+                width: 400
+                maximumLineCount: 1
+            }
         }
     }
 
@@ -351,8 +332,29 @@ Item {
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: ""
+                        text: "\uF2DB"
                         color: colOnSurface
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14
+                    }
+                }
+
+                // CPU Temperature
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+                    visible: SystemService.cpuTemp > 0
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: SystemService.cpuTemp + "°"
+                        color: SystemService.cpuTemp >= 80 ? colError : SystemService.cpuTemp >= 65 ? colTertiary : colOnSurface
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 12
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "\uF0E4"
+                        color: SystemService.cpuTemp >= 80 ? colError : SystemService.cpuTemp >= 65 ? colTertiary : colOnSurface
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 14
                     }
@@ -438,15 +440,16 @@ Item {
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     implicitWidth: ShellState.batteryTooltipVisible ? batExpandedRow.implicitWidth + 16 : batRow.implicitWidth + 12
-                    height: 18
-                    radius: 6
-                    color: {
+                    height: 16
+                    radius: 5
+                    property color batColor: {
                         if (!BatteryService.hasBattery || !BatteryService.batteryDevice.ready) return "transparent"
                         var pct = BatteryService.batteryPercent
-                        if (pct <= 20) return colRed
-                        if (pct <= 70) return colYellow
-                        return colSuccess
+                        if (pct >= 60) return "#4ade80"
+                        if (pct >= 30) return "#facc15"
+                        return "#f87171"
                     }
+                    color: batColor
                     visible: BatteryService.hasBattery && BatteryService.batteryDevice.ready
                     Behavior on implicitWidth { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
@@ -512,6 +515,35 @@ Item {
                     }
                 }
 
+                // Mic indicator
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: true
+                    text: AudioService.micMuted ? "\uF131" : "\uF130"
+                    color: AudioService.micMuted ? colError : colPrimary
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 14
+
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onPressed: function(mouse) {
+                            if (mouse.button === Qt.LeftButton) {
+                                AudioService.toggleMicMute()
+                                osdContent.triggerMic(
+                                    AudioService.micMuted ? "\uF131" : "\uF130",
+                                    AudioService.micMuted ? "Muted" : "Unmuted"
+                                )
+                            } else if (mouse.button === Qt.RightButton) {
+                                var name = AudioService.cycleMicSource()
+                                if (name) {
+                                    osdContent.triggerMic("\uF130", name)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Bluetooth
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -528,18 +560,53 @@ Item {
                     }
                 }
 
-                // Network (WiFi)
-                Text {
+                // Network (WiFi) + Speed
+                Row {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: NetworkService.networkConnected ? "󰤨" : "󰤭"
-                    color: NetworkService.networkConnected ? colError : colColor4
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
+                    spacing: 6
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: ShellState.toggleWifiSelector()
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: -2
+                        visible: NetworkService.networkConnected
+
+                        property string downText: {
+                            if (NetworkService.netDown >= 1024) return "↓" + (NetworkService.netDown / 1024).toFixed(1) + "M"
+                            return "↓" + NetworkService.netDown + "K"
+                        }
+                        property string upText: {
+                            if (NetworkService.netUp >= 1024) return "↑" + (NetworkService.netUp / 1024).toFixed(1) + "M"
+                            return "↑" + NetworkService.netUp + "K"
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: parent.downText
+                            color: NetworkService.netDown > 0 ? colPrimary : colTertiary
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 8
+                        }
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: parent.upText
+                            color: NetworkService.netUp > 0 ? colTertiary : colTertiary
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 8
+                        }
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: NetworkService.networkConnected ? "󰤨" : "󰤭"
+                        color: colPrimary
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: ShellState.toggleWifiSelector()
+                        }
                     }
                 }
 

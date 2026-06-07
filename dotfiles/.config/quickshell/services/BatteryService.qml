@@ -14,6 +14,17 @@ Item {
     readonly property bool isCharging: hasBattery ? (batteryDevice.state === UPowerDeviceState.Charging || batteryDevice.state === UPowerDeviceState.FullyCharged || batteryDevice.state === UPowerDeviceState.PendingCharge) : false
     readonly property int batteryPercent: hasBattery ? Math.round(batteryDevice.percentage * 100) : 0
 
+    property int warnThreshold: 20
+    property int _prevBatteryPercent: -1
+
+    onBatteryPercentChanged: {
+        if (!hasBattery || isCharging) { _prevBatteryPercent = batteryPercent; return }
+        if (_prevBatteryPercent >= 0 && _prevBatteryPercent > warnThreshold && batteryPercent <= warnThreshold) {
+            NotificationService.addNotification("Battery", "Low Battery", batteryPercent + "% remaining — plug in power", "critical")
+        }
+        _prevBatteryPercent = batteryPercent
+    }
+
     property real batteryHealth: -1
 
     readonly property string batteryTooltipText: {

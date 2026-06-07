@@ -11,9 +11,8 @@
 
 ## Essential Commands
 - Change wallpaper: `wallset` (opens selector) or `Super + W`
-- Random wallpaper on login: `wallset-backend-startup` (or `Super + Shift + R`)
+- Random wallpaper on login: `wallset-backend-startup`
 - Apply current wallpaper theme manually: `wallset-backend`
-- Reload Hyprland: `Super + Shift + R` (restarts Hyprland)
 - Toggle bar: `Super + O` (Quickshell bar visibility)
 - Toggle media visualizer: `Super + M` (slides in from right)
 - Toggle notification panel: `Super + A` (slide-in from right)
@@ -62,17 +61,17 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - `GlobalShortcut` handlers - IPC from keybinds.conf
 - `services/` - **Singleton services** (pragma Singleton + qmldir):
   - `ShellState.qml` - UI toggle states (activePopup pattern)
-  - `AudioService.qml` - wpctl parsing, sink switching, Bluetooth auto-switch/revert
-  - `BrightnessService.qml` - Brightness polling (5s) + control
-  - `VolumeService.qml` - Volume polling (3s) + control
-  - `NetworkService.qml` - nmcli monitoring
-  - `BatteryService.qml` - UPower + health (hasBattery fallback)
-  - `SystemService.qml` - CPU + memory from /proc (2s poll)
-  - `NotificationService.qml` - DBus notification server, grouped notifications, toast list
-  - `ColorService.qml` - Reads matugen colors.json with 2s polling
+  - `AudioService.qml` - wpctl status parsing, sink switching, Bluetooth auto-switch/revert, mic source parsing (Sources + Filters sections), updates VolumeService volume, micMuted/micVolume properties, toggleMicMute/cycleMicSource functions
+  - `BrightnessService.qml` - Brightness polling (200ms) + control
+  - `VolumeService.qml` - Volume from AudioService (no independent poll), debounced refresh for muted state
+  - `NetworkService.qml` - nmcli monitoring with `-e yes` SSID escaping, network speed from /proc/net/dev
+  - `BatteryService.qml` - UPower + sysfs, hasBattery guard, low battery notification at configurable threshold
+  - `SystemService.qml` - CPU + memory + temperature from /proc (2s poll)
+  - `NotificationService.qml` - DBus notification server, grouped notifications, toast list, startup sound guard (1.5s), persistence to ~/.cache/quickshell/notifications.json, action buttons, urgency-based styling
+  - `ColorService.qml` - Reads matugen colors.json with 2s polling, skips parse if unchanged
 - `BarContent.qml` - Bar layout, binds to singleton services
 - `widgets/` - All popup widgets including OsdPopup.qml
-- `core/NotificationUtils.js` - Time formatting and icon mapping
+- `core/NotificationUtils.js` - Time formatting, icon resolution from system dirs, and icon mapping
 - `calendar/` - weather.sh, .env (OpenWeatherMap config)
 - `functions/ColorUtils.qml` - Color utilities
 
@@ -86,8 +85,15 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **Root type is `Item`** - not `QtObject` or `Singleton`
 - **Cheatsheet executable actions** - power actions show confirmation dialog; others copy keybind to clipboard
 - **Notification toasts use ListModel** - Separate `toastList` (max 3) from `notifications` (JS array)
-- **OSD for volume/brightness** - Watches service properties, auto-hides after 2s
+- **Notification icons** - Resolves app icons from system hicolor/pixmaps dirs via `NotificationUtils.getAppIconCandidates()`; falls back to Nerd Font icons based on summary text
+- **OSD for volume/brightness** - Watches service properties, auto-hides after 2s; updates in-place if already visible (no restart animation)
 - **PanelWindow doesn't support anchors.horizontalCenter** - Use `anchors.left: true` with calculated `margins.left`
+- **Low battery notification** - BatteryService warns at configurable threshold (default 20%), critical urgency toast
+- **Notification persistence** - Saved to ~/.cache/quickshell/notifications.json, restored on reload
+- **Notification action buttons** - Chip buttons for notification actions (Reply, Dismiss, etc.)
+- **Urgency-based styling** - Critical notifications get red border and 15s dismiss timeout
+- **CPU temperature** - SystemService reads coretemp from /sys/class/hwmon, color-coded (green/yellow/red)
+- **Network speed** - NetworkService reads /proc/net/dev wlan0, shows KB/s or MB/s next to WiFi icon
 
 ### Key Decisions
 - Colors bound to ColorService (Material You from matugen)
@@ -106,13 +112,12 @@ All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell
 | Key | Mode |
 |-----|------|
 | `Print` | Full screen to clipboard |
-| `Ctrl+Print` | Full screen to file |
-| `Shift+Print` | Region select |
-| `Alt+Print` | Window select |
-| `Ctrl+Shift+Print` | Monitor select |
-| `Ctrl+Alt+Print` | Timed full screen (5s delay) |
+| `Ctrl+Print` | Region select |
+| `Shift+Print` | Window select |
+| `Alt+Print` | Monitor select |
+| `Ctrl+Shift+Print` | Region select + swappy annotation |
 
-Uses `grim` + `slurp`. Saves to `~/Pictures/Screenshots/`, copies to clipboard via `wl-copy`.
+Uses `grim` + `slurp`. Saves to `~/Pictures/Screenshots/`, copies to clipboard via `wl-copy`. Annotation uses `swappy`.
 
 ### Screen Recording (`~/.config/scripts/recording/recording.sh`)
 | Key | Mode |
@@ -157,6 +162,8 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Print` | Full screenshot | exec |
 | `Ctrl + Print` | Region screenshot | exec |
 | `Shift + Print` | Window screenshot | exec |
+| `Ctrl + Shift + Print` | Annotate screenshot (swappy) | exec |
+| `Alt + Print` | Monitor screenshot | exec |
 | `Super + Shift + C` | Color picker (hyprpicker) | exec |
 | `Ctrl + Shift + R` | Region recording | exec |
 | `Ctrl + Alt + R` | Full recording | exec |
@@ -178,6 +185,19 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **B1 (Qt.Object.assign)** - Legacy `NotificationPanel.qml` had `Qt.Object.assign()`. Fixed by syncing widgets.
 - **F11 (NotificationPopup accent color)** - Was matching `notif.title` instead of `appName`. Fixed.
 - **F9 (Window title width)** - Doubled from 200px to 400px max.
+- **OSD signal names** - Used `onVolumeChanged` (doesn't exist); fixed to `onVolumePercentChanged`. PanelWindow was invisible on startup — removed `visible` binding so surface always exists.
+- **OSD update-in-place** - Rapid changes now update values without restarting entry animation.
+- **BrightnessService poll** - 5000ms → 200ms to match VolumeService responsiveness.
+- **Notification startup sound guard** - 1.5s guard prevents replayed notifications from playing sound on reload.
+- **ColorService hardcoded path** - Replaced `/home/mrtrotid-ssd/` with `Quickshell.env("HOME")`.
+- **ColorService idle CPU** - Skips `_parseColors()` when JSON string is unchanged.
+- **NetworkService SSID colons** - Uses `nmcli -e yes` and unescapes `\:` → `:` for SSIDs containing colons.
+- **AudioService section detection** - Switched from exact match to prefix match (`indexOf`) for forward-compat.
+- **VolumeService/AudioService merged** - Eliminated independent 200ms poll; volume driven by AudioService's `wpctl status`.
+- **AudioService sink parsing (Devices eating Sinks)** - New Devices section parsing intercepted `Sinks:` header and `continue`d past Sinks detection, so sinks were never parsed. Fixed by letting Devices exit fall through to section detection.
+- **AudioService mic mute optimistic toggle** - `toggleMicMute()` was setting `micMuted = !micMuted` before wpctl command ran, causing UI/state mismatch. Fixed: no optimistic toggle; immediate 200ms re-poll after `wpctl set-mute` for actual state.
+- **AudioService Bluetooth mic duplicate** - Bluetooth sources appeared in both Sources (friendly name) and Filters (raw `bluez_input.xxx`). Fixed: Filters section skips all `bluez_` entries since Sources always has the friendly-name version.
+- **AudioService mic source cycling race** - Sources array empty on early right-click (before first 3s poll). Fixed: forces re-poll if sources empty during cycle.
 
 ### Added Features
 - **xdg-desktop-portal-hyprland** - Added to exec-once for screen share, file pickers, Flatpak
@@ -185,6 +205,12 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **Power menu confirm dialog** - Cheatsheet shows confirmation for poweroff/reboot/suspend
 - **Night light toggle** - `Super + Shift + N` keybind for hyprsunset
 - **Weather location docs** - Updated .env with city ID examples
+- **CPU temperature chip** - SystemService reads coretemp from /sys/class/hwmon, color-coded display in bar
+- **Network speed indicator** - NetworkService reads /proc/net/dev, shows ↓/↑ KB/s or MB/s next to WiFi icon
+- **Notification action buttons** - Chip buttons for notification actions (Reply, Dismiss, etc.)
+- **Urgency-based notification styling** - Critical notifications get red border and 15s dismiss timeout
+- **Notification persistence** - Notifications saved to ~/.cache/quickshell/notifications.json, restored on reload
+- **Low battery notification** - BatteryService warns at configurable threshold (default 20%), critical urgency toast
 
 ### False Claims (No Fix Needed)
 - **B3** - SystemService uses Process{}, not FileView
@@ -196,7 +222,7 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **B10** - No swaync-client in Quickshell shell
 - **B11** - Single NotificationServer in NotificationService.qml
 - **F1** - WiFi icon uses `colPrimary`, not `colError`
-- **F2** - BrightnessService poll is 5s, not 300ms
+- **F2** - BrightnessService poll is 200ms, matches VolumeService
 - **F3** - AudioService parser is section-based, handles format changes gracefully
 - **F4** - Layerrules for `custom:*` exist (lines 96-97 of hyprland.conf)
 - **F5** - Cheatsheet fully wired in shell.qml (PanelWindow + GlobalShortcut)

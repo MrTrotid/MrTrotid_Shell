@@ -8,6 +8,7 @@ Item {
     id: root
 
     property int cpuPercent: 0
+    property int cpuTemp: 0
     property int memoryPercent: 0
     property var previousCpuStats: null
 
@@ -19,6 +20,19 @@ Item {
         onTriggered: {
             if (!memInfo.running) memInfo.running = true
             if (!cpuStat.running) cpuStat.running = true
+            if (!tempRead.running) tempRead.running = true
+        }
+    }
+
+    Process {
+        id: tempRead
+        command: ["sh", "-c", "for f in /sys/class/hwmon/hwmon*/temp1_input; do d=$(dirname $f); [ \"$(cat $d/name 2>/dev/null)\" = \"coretemp\" ] && cat $f && break; done"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var val = parseInt(text.trim())
+                if (!isNaN(val)) root.cpuTemp = Math.round(val / 1000)
+            }
         }
     }
 
@@ -65,5 +79,6 @@ Item {
     Component.onCompleted: {
         memInfo.running = true
         cpuStat.running = true
+        tempRead.running = true
     }
 }

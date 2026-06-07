@@ -20,7 +20,7 @@ ShellRoot {
     readonly property real barGap: 4
     readonly property real popupGap: 2
     readonly property real sideMargin: 8
-    readonly property real sw: Quickshell.screens[0]?.width ?? 1920
+    readonly property real sw: main.screen?.width ?? Quickshell.screens[0]?.width ?? 1920
 
     // ═══════════════════════════════════════════════════════════════
     //  BAR (own layer shell surface, exclusiveZone reserves space)
@@ -65,10 +65,13 @@ ShellRoot {
                 if (y <= 2) {
                     if (!main.cursorNearTop) { main.cursorNearTop = true; ShellState.barVisible = true }
                     hideTimer.stop()
-                } else if (y > 50 && main.cursorNearTop && !ShellState.keepBarVisible) {
+                } else if (y > 50 && !ShellState.keepBarVisible) {
+                    // Close popups when cursor is away from top
                     if (ShellState.anyPopupOpen) ShellState.closePopup()
-                    main.cursorNearTop = false
-                    hideTimer.running = true
+                    if (main.cursorNearTop) {
+                        main.cursorNearTop = false
+                        hideTimer.running = true
+                    }
                 }
             }
         }
@@ -98,7 +101,7 @@ ShellRoot {
     PanelWindow {
         id: toastPopup
         screen: Quickshell.screens[0]
-        visible: NotificationService.notifications.count > 0
+        visible: NotificationService.toastList.count > 0
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
@@ -112,7 +115,7 @@ ShellRoot {
         margins.left: (sw - 340) / 2
 
         implicitWidth: 340
-        implicitHeight: 64 + (Math.min(NotificationService.notifications.count, 3) - 1) * 10
+        implicitHeight: 64 + (Math.min(NotificationService.toastList.count, 3) - 1) * 10
 
         NotificationPopup {
             id: toastContent
@@ -134,6 +137,7 @@ ShellRoot {
 
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "custom:bl-popup"
+        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors.top: true
         anchors.right: true
@@ -141,12 +145,32 @@ ShellRoot {
         implicitWidth: (sw - 16) * 0.4
         implicitHeight: visible ? 500 : 0
 
+        Item {
+            id: blFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Timer {
+            id: blFocusTimer
+            interval: 100
+            repeat: false
+            onTriggered: blFocusCatcher.forceActiveFocus()
+        }
+
         BluetoothSelector {
             id: blInner
             anchors.fill: parent
         }
 
-        onVisibleChanged: { if (visible) blInner.show() }
+        onVisibleChanged: {
+            if (visible) {
+                blFocusTimer.start()
+                blInner.show()
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -162,6 +186,7 @@ ShellRoot {
 
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "custom:wifi-popup"
+        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors.top: true
         anchors.right: true
@@ -169,12 +194,32 @@ ShellRoot {
         implicitWidth: (sw - 16) * 0.4
         implicitHeight: visible ? 500 : 0
 
+        Item {
+            id: wifiFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Timer {
+            id: wifiFocusTimer
+            interval: 100
+            repeat: false
+            onTriggered: wifiFocusCatcher.forceActiveFocus()
+        }
+
         WifiSelector {
             id: wifiSelInner
             anchors.fill: parent
         }
 
-        onVisibleChanged: { if (visible) wifiSelInner.show() }
+        onVisibleChanged: {
+            if (visible) {
+                wifiFocusTimer.start()
+                wifiSelInner.show()
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -183,26 +228,94 @@ ShellRoot {
     PanelWindow {
         id: notifPopup
         screen: Quickshell.screens[0]
-        visible: ShellState.notificationPanelOpen
+        visible: ShellState.notificationPanelOpen || notifLoader.opacity > 0
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         color: "transparent"
 
-        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.layer: (ShellState.notificationPanelOpen || notifLoader.opacity > 0) ? WlrLayer.Top : WlrLayer.Background
         WlrLayershell.namespace: "custom:notif-popup"
+        WlrLayershell.keyboardFocus: ShellState.notificationPanelOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors.top: true
         anchors.right: true
         margins.right: 16
-        implicitWidth: 360
-        implicitHeight: visible ? 590 : 0
+        implicitWidth: 365
+        implicitHeight: 590
 
-        NotificationPanel {
-            id: notifPanelInner
+        Item {
+            id: notifFocusCatcher
             anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
         }
 
-        onVisibleChanged: { if (visible) notifPanelInner.show() }
+        Timer {
+            id: notifFocusTimer
+            interval: 100
+            repeat: false
+            onTriggered: notifFocusCatcher.forceActiveFocus()
+        }
+
+        Loader {
+            id: notifLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.notificationPanelOpen
+
+            transform: Translate { id: notifTransform }
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.notificationPanelOpen
+                    PropertyChanges { target: notifLoader; opacity: 1 }
+                    PropertyChanges { target: notifTransform; x: 0; y: 0 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.notificationPanelOpen
+                    PropertyChanges { target: notifLoader; opacity: 0 }
+                    PropertyChanges { target: notifTransform; x: notifLoader.width + 20; y: 0 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    ParallelAnimation {
+                        NumberAnimation { target: notifTransform; properties: "x,y"; duration: 350; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: notifLoader; property: "opacity"; duration: 250; easing.type: Easing.OutCubic }
+                    }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    ParallelAnimation {
+                        NumberAnimation { target: notifTransform; properties: "x,y"; duration: 300; easing.type: Easing.InCubic }
+                        NumberAnimation { target: notifLoader; property: "opacity"; duration: 200; easing.type: Easing.InCubic }
+                    }
+                }
+            ]
+
+            sourceComponent: Item {
+                NotificationPanel {
+                    id: notifPanelInner
+                    anchors.fill: parent
+                }
+
+                Connections {
+                    target: ShellState
+                    function onNotificationPanelOpenChanged() {
+                        if (ShellState.notificationPanelOpen) {
+                            notifFocusTimer.start()
+                            notifPanelInner.show()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -218,6 +331,7 @@ ShellRoot {
 
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "custom:cal-popup"
+        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         anchors.top: true
         anchors.left: true
@@ -225,12 +339,186 @@ ShellRoot {
         implicitWidth: (sw - 16) * 0.70 + 20
         implicitHeight: visible ? 500 : 0
 
+        Item {
+            id: calFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Timer {
+            id: calFocusTimer
+            interval: 100
+            repeat: false
+            onTriggered: calFocusCatcher.forceActiveFocus()
+        }
+
         CalendarPopup {
             id: calPopupInner
             anchors.fill: parent
         }
 
-        onVisibleChanged: { if (visible) calPopupInner.show() }
+        onVisibleChanged: {
+            if (visible) {
+                calFocusTimer.start()
+                calPopupInner.show()
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  CHEATSHEET POPUP (own layer shell surface, exclusiveZone 0)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: csPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.cheatsheetOpen
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "custom:cheatsheet"
+        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        margins.left: (sw - ((sw - 16) * 0.85 + 20)) / 2
+        implicitWidth: (sw - 16) * 0.85 + 20
+        implicitHeight: visible ? 750 : 0
+
+        Cheatsheet {
+            id: csInner
+            anchors.fill: parent
+        }
+
+        onVisibleChanged: { if (visible) csInner.show() }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  QUICK ACTIONS HUD (bottom-center floating bar)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: qaPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.quickActionsOpen || qaLoader.opacity > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: (ShellState.quickActionsOpen || qaLoader.opacity > 0) ? WlrLayer.Overlay : WlrLayer.Background
+        WlrLayershell.namespace: "custom:quickactions"
+        WlrLayershell.keyboardFocus: ShellState.quickActionsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.left: true
+        anchors.right: true
+        anchors.bottom: true
+        implicitWidth: sw
+        implicitHeight: 120
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: ShellState.closePopup()
+        }
+
+        Loader {
+            id: qaLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.quickActionsOpen
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.quickActionsOpen
+                    PropertyChanges { target: qaLoader; opacity: 1 }
+                    PropertyChanges { target: qaLoader; anchors.bottomMargin: 0 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.quickActionsOpen
+                    PropertyChanges { target: qaLoader; opacity: 0 }
+                    PropertyChanges { target: qaLoader; anchors.bottomMargin: -80 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    ParallelAnimation {
+                        NumberAnimation { target: qaLoader; property: "anchors.bottomMargin"; duration: 300; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: qaLoader; property: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                    }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    ParallelAnimation {
+                        NumberAnimation { target: qaLoader; property: "anchors.bottomMargin"; duration: 250; easing.type: Easing.InCubic }
+                        NumberAnimation { target: qaLoader; property: "opacity"; duration: 200; easing.type: Easing.InCubic }
+                    }
+                }
+            ]
+
+            sourceComponent: QuickActions {
+                id: qaInner
+                anchors.fill: parent
+                onClosed: ShellState.closePopup()
+            }
+        }
+
+        onVisibleChanged: {
+            if (visible && ShellState.quickActionsOpen) {
+                qaFocusTimer.start()
+            }
+        }
+    }
+
+    Timer {
+        id: qaFocusTimer
+        interval: 50
+        repeat: false
+        onTriggered: {
+            if (qaLoader.item) {
+                qaLoader.item.forceActiveFocus()
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  WALLPAPER PICKER (full-screen overlay)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: wpPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.wallpaperPickerOpen
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "custom:wallpaper-picker"
+        WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        anchors.right: true
+        anchors.bottom: true
+        implicitWidth: sw
+        implicitHeight: main.screen?.height ?? 1080
+
+        WallpaperPicker {
+            id: wpInner
+            anchors.fill: parent
+            onClosed: ShellState.closePopup()
+        }
+
+        onVisibleChanged: {
+            if (visible) {
+                wpInner.forceActiveFocus()
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -241,11 +529,37 @@ ShellRoot {
         visible: ShellState.mediaCardOpen
         color: "transparent"
         width: 320; height: 200
-        flags: Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.WindowTransparentForInput
+        flags: Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint
         x: 0; y: 0
         Behavior on x { NumberAnimation { duration: 400; easing.type: Easing.OutQuart } }
         Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutQuart } }
         MediaCard { anchors.fill: parent; anchors.margins: 4 }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  OSD POPUP (volume/brightness feedback)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: osdPopup
+        screen: main.screen
+        color: "transparent"
+
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "custom:osd"
+        exclusiveZone: 0
+
+        anchors.bottom: true
+        anchors.left: true
+        margins.left: (sw - 200) / 2
+        margins.bottom: 60
+
+        implicitWidth: 200
+        implicitHeight: 60
+
+        OsdPopup {
+            id: osdContent
+            anchors.fill: parent
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -267,5 +581,23 @@ ShellRoot {
         name: "mediaControlsToggle"
         description: "Toggle media card"
         onPressed: ShellState.toggleMediaCard()
+    }
+
+    GlobalShortcut {
+        name: "cheatsheetToggle"
+        description: "Toggle cheatsheet"
+        onPressed: ShellState.toggleCheatsheet()
+    }
+
+    GlobalShortcut {
+        name: "wallpaperToggle"
+        description: "Toggle wallpaper picker"
+        onPressed: ShellState.toggleWallpaperPicker()
+    }
+
+    GlobalShortcut {
+        name: "quickActionsToggle"
+        description: "Toggle quick actions HUD"
+        onPressed: ShellState.toggleQuickActions()
     }
 }

@@ -7,13 +7,16 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 - **Hyprland 0.55+** with scrolling layout, gestures, layerrules
 - **Quickshell 0.3.0** - singleton services, global IPC, Wayland layer shell
 - **Material You** color scheme via matugen (auto-generates M3 colors from wallpaper)
-- **Notification system** with DBus server, grouped notifications, toasts
+- **Notification system** with DBus server, grouped notifications, toasts, action buttons, urgency styling, persistence
 - **Coverflow wallpaper picker** with thumbnails and filter bar
 - **Quick Actions HUD** with keyboard navigation and executable actions
-- **OSD** for volume/brightness feedback
+- **OSD** for volume/brightness/mic feedback
 - **Cheatsheet** - searchable keybind reference with executable actions
 - **Night light toggle** via hyprsunset
 - **Power menu confirm dialog** for dangerous actions
+- **CPU temperature chip** - color-coded (green/yellow/red) in bar
+- **Network speed indicator** - ↓/↑ KB/s or MB/s next to WiFi icon
+- **Low battery notification** - warns at configurable threshold (default 20%)
 
 ## Quick Reference
 
@@ -116,11 +119,14 @@ Trotid_Shell/
 
 Top bar with exclusiveZone: 48, auto-hides when cursor moves away.
 
-**Layout:** Left (workspaces, media) -> Center (clock) -> Right (volume, brightness, battery, bluetooth, wifi, tray)
+**Layout:** Left (workspaces, media) -> Center (clock) -> Right (volume, brightness, cpu, temp, battery, bluetooth, wifi+speed, tray)
 
 **Key behaviors:**
 - Auto-hide: Cursor near top shows bar; cursor 50px+ away hides after 1.5s
 - Volume click cycles audio sinks
+- Mic indicator: left click = toggle mute, right click = cycle mic sources
+- Network speed: shows ↓/↑ KB/s or MB/s next to WiFi icon when active
+- CPU temperature: color-coded green (<65°), yellow (65-79°), red (≥80°)
 - Battery: hardcoded green/yellow/red colors, text uses colOnPrimary
 - Window title: capped at 416px max width
 - WiFi icon: solid colPrimary color matching Bluetooth
@@ -150,6 +156,9 @@ Stacked notification toasts below the bar.
 - Nerd font icons only (no system appIcon mismatch)
 - Resolves app icons from system hicolor/pixmaps dirs; falls back to Nerd Font icons
 - Startup sound guard: 1.5s delay prevents replayed notifications from playing sound on reload
+- Action buttons: chip buttons for notification actions (Reply, Dismiss, etc.)
+- Urgency styling: Critical notifications get red border and 15s dismiss timeout
+- Persistence: Notifications saved to ~/.cache/quickshell/notifications.json, restored on reload
 </details>
 
 <details>
@@ -210,13 +219,13 @@ All services live in `quickshell/services/` with `pragma Singleton` + `qmldir` e
 |---------|-------------|
 | ShellState | UI toggle states (activePopup pattern) |
 | ColorService | Reads matugen colors.json with 2s polling, skips parse if unchanged |
-| AudioService | wpctl status parsing, sink switching, Bluetooth auto-switch, updates VolumeService |
+| AudioService | wpctl status parsing, sink switching, Bluetooth auto-switch, mic source parsing, updates VolumeService |
 | BrightnessService | Brightness polling (200ms) + control |
 | VolumeService | Volume from AudioService (no independent poll), debounced refresh for muted state |
-| NetworkService | nmcli monitoring with `-e yes` SSID escaping |
-| BatteryService | UPower + sysfs, hasBattery guard |
-| SystemService | CPU + memory from /proc (2s poll) |
-| NotificationService | DBus notification server, grouped notifications, toast list, startup sound guard |
+| NetworkService | nmcli monitoring with `-e yes` SSID escaping, network speed from /proc/net/dev |
+| BatteryService | UPower + sysfs, hasBattery guard, low battery notification at configurable threshold |
+| SystemService | CPU + memory + temperature from /proc (2s poll) |
+| NotificationService | DBus notification server, grouped notifications, toast list, startup sound guard, persistence, action buttons, urgency styling |
 
 ## Scripts
 

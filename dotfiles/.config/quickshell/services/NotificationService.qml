@@ -16,6 +16,7 @@ Item {
     property bool silent: false
     property var activePopup: null
     property bool _startupPhase: true
+    property string _persistPath: Quickshell.env("HOME") + "/.cache/quickshell/notifications.json"
 
     Timer {
         id: startupGuard
@@ -23,6 +24,83 @@ Item {
         running: true
         repeat: false
         onTriggered: root._startupPhase = false
+    }
+
+    function _saveNotifications() {
+        var serializable = []
+        for (var i = 0; i < root.notifications.length; i++) {
+            var n = root.notifications[i]
+            serializable.push({
+                "notificationId": n.notificationId,
+                "appName": n.appName,
+                "summary": n.summary,
+                "body": n.body,
+                "appIcon": n.appIcon,
+                "image": n.image,
+                "urgency": n.urgency,
+                "time": n.time,
+                "actions": n.actions
+            })
+        }
+        _writeFile(_persistPath, JSON.stringify(serializable, null, 2))
+    }
+
+    function _loadNotifications() {
+        var content = _readFile(_persistPath)
+        if (!content || content.length === 0) return
+        try {
+            var loaded = JSON.parse(content)
+            if (!Array.isArray(loaded)) return
+            var restored = []
+            for (var i = 0; i < loaded.length; i++) {
+                var n = loaded[i]
+                restored.push({
+                    "notificationId": n.notificationId,
+                    "notification": null,
+                    "appName": n.appName || "",
+                    "summary": n.summary || "",
+                    "body": n.body || "",
+                    "appIcon": n.appIcon || "",
+                    "image": n.image || "",
+                    "urgency": n.urgency || "normal",
+                    "time": n.time || 0,
+                    "actions": n.actions || [],
+                    "popup": false
+                })
+            }
+            root.notifications = restored
+            root.unread = restored.length
+        } catch (e) {}
+    }
+
+    function _writeFile(path, content) {
+        var proc = _writeFileProc
+        proc._command = "mkdir -p $(dirname \"" + path + "\") && echo '" + Qt.btoa(content).replace(/'/g, "'\\''") + "' | base64 -d > \"" + path + "\""
+        proc.running = true
+    }
+
+    function _readFile(path) {
+        var proc = _readFileProc
+        proc.command = ["cat", path]
+        proc._result = ""
+        proc.running = true
+        return proc._result
+    }
+
+    Process {
+        id: _writeFileProc
+        property string _command
+        command: ["sh", "-c", _command]
+        running: false
+    }
+
+    Process {
+        id: _readFileProc
+        property string _result: ""
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: _readFileProc._result = text
+        }
     }
 
     NotificationServer {
@@ -77,12 +155,16 @@ Item {
                     "summary": notifObj.summary,
                     "body": notifObj.body,
                     "appIcon": notifObj.appIcon,
-                    "appName": notifObj.appName
+                    "appName": notifObj.appName,
+                    "actions": notifObj.actions,
+                    "urgency": notifObj.urgency
                 })
             }
 
             if (!root._startupPhase)
                 Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"])
+
+            root._saveNotifications()
         }
     }
 
@@ -129,6 +211,8 @@ Item {
                 break
             }
         }
+
+        root._saveNotifications()
     }
 
     function dismissToast(id) {
@@ -149,6 +233,7 @@ Item {
         root.toastList.clear()
         root.activePopup = null
         root.unread = 0
+        root._saveNotifications()
     }
 
     function markAllRead() {
@@ -162,6 +247,45 @@ Item {
             if (root.notifications[i].appName === appId) count++
         }
         return count
+    }
+
+    function addNotification(appName, summary, body, urgency) {
+        var notifObj = {
+            "notificationId": Date.now() + Math.floor(Math.random() * 1000),
+            "notification": null,
+            "appName": appName || "",
+            "summary": summary || "",
+            "body": body || "",
+            "appIcon": "",
+            "image": "",
+            "urgency": urgency || "normal",
+            "time": Date.now(),
+            "actions": [],
+            "popup": true
+        }
+
+        root.activePopup = notifObj
+        root.unread++
+        root.notifications = [...root.notifications, notifObj]
+
+        if (root.toastList.count >= root._maxToasts) {
+            var overflow = root.toastList.get(root.toastList.count - 1)
+            root.toastList.remove(root.toastList.count - 1, 1)
+        }
+        root.toastList.insert(0, {
+            "notificationId": notifObj.notificationId,
+            "summary": notifObj.summary,
+            "body": notifObj.body,
+            "appIcon": notifObj.appIcon,
+            "appName": notifObj.appName,
+            "actions": notifObj.actions,
+            "urgency": notifObj.urgency
+        })
+
+        root._saveNotifications()
+
+        if (!root._startupPhase)
+            Quickshell.execDetached(["paplay", "/usr/share/sounds/freedesktop/stereo/message-new-instant.oga"])
     }
 
     function attemptInvokeAction(id, actionIdentifier) {
@@ -181,5 +305,9 @@ Item {
         }
 
         root.discardNotification(id)
+    }
+
+    Component.onCompleted: {
+        _loadNotifications()
     }
 }

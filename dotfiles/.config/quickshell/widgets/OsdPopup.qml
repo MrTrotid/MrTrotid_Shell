@@ -10,6 +10,7 @@ Item {
     property string osdType: ""
     property int osdValue: 0
     property string osdIcon: ""
+    property string osdLabel: ""
     property int _lastVolume: -1
     property int _lastBrightness: -1
 
@@ -43,6 +44,24 @@ Item {
         root.osdType = type
         root.osdValue = value
         root.osdIcon = icon
+        root.osdLabel = ""
+
+        if (root.showOsd) {
+            hideTimer.restart()
+            return
+        }
+
+        root.showOsd = true
+        osdRect.opacity = 1
+        entryAnim.start()
+        hideTimer.restart()
+    }
+
+    function triggerMic(icon, label) {
+        root.osdType = "mic"
+        root.osdValue = 0
+        root.osdIcon = icon
+        root.osdLabel = label
 
         if (root.showOsd) {
             hideTimer.restart()
@@ -113,17 +132,19 @@ Item {
                 spacing: 4
 
                 Text {
-                    text: root.osdType === "volume" ? "Volume" : "Brightness"
+                    text: root.osdType === "volume" ? "Volume" : root.osdType === "mic" ? "Microphone" : "Brightness"
                     color: ColorService.surfaceVariantText
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 10
                 }
 
+                // Progress bar for volume/brightness
                 Rectangle {
                     Layout.fillWidth: true
                     height: 4
                     radius: 2
                     color: ColorService.surfaceContainerHighest
+                    visible: root.osdType !== "mic"
 
                     Rectangle {
                         width: parent.width * (root.osdValue / 100)
@@ -136,9 +157,21 @@ Item {
                         }
                     }
                 }
+
+                // Label text for mic
+                Text {
+                    visible: root.osdType === "mic" && root.osdLabel !== ""
+                    text: root.osdLabel
+                    color: ColorService.surfaceText
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
             }
 
             Text {
+                visible: root.osdType !== "mic"
                 text: root.osdValue + "%"
                 color: ColorService.surfaceText
                 font.family: "JetBrainsMono Nerd Font"
