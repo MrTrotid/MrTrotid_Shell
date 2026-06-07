@@ -12,14 +12,6 @@ Item {
     property int volumePercent: Math.min(150, Math.round(currentVolume * 100))
     property bool volumeMuted: false
 
-    // Poll — catches changes from keybinds (exec wpctl externally)
-    Timer {
-        interval: 200
-        running: true
-        repeat: true
-        onTriggered: if (!getVolumeCmd.running) getVolumeCmd.running = true
-    }
-
     // Debounce timer for immediate refresh after user action
     Timer {
         id: volRefresh

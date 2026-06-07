@@ -43,10 +43,11 @@ Item {
     property color yellow: "#fdd663"
 
     property bool _loaded: false
+    property string _lastJson: ""
 
     FileView {
         id: colorFile
-        path: "/home/mrtrotid-ssd/.config/quickshell/mrtrotid-shell/colors.json"
+        path: Quickshell.env("HOME") + "/.config/quickshell/mrtrotid-shell/colors.json"
         onTextChanged: root._parseColors(colorFile.text())
     }
 
@@ -59,6 +60,8 @@ Item {
     }
 
     function _parseColors(jsonText) {
+        if (jsonText === _lastJson) return
+        _lastJson = jsonText
         try {
             var colors = JSON.parse(jsonText)
             root.background = Qt.rgba(_hexToR(colors.background), _hexToG(colors.background), _hexToB(colors.background), 1.0)

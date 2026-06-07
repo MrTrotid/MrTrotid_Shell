@@ -32,18 +32,21 @@ Item {
                 var result = []
                 var currentIds = []
 
-                // Find the Sinks section under Audio
-                // Strategy: look for "Sinks:" and parse lines after it until we hit another section header
                 var inSinksSection = false
                 var inAudioSection = false
 
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i]
-
-                    // Detect Audio/Video/Settings section boundaries
                     var trimmed = line.trim()
-                    if (trimmed === "Audio" || trimmed === "Video" || trimmed === "Settings") {
-                        inAudioSection = (trimmed === "Audio")
+
+                    // Detect section boundaries — use indexOf for forward-compat
+                    if (trimmed.indexOf("Audio") === 0 && (trimmed.length === 5 || trimmed[5] === " " || trimmed[5] === "\t")) {
+                        inAudioSection = true
+                        inSinksSection = false
+                        continue
+                    }
+                    if (trimmed.indexOf("Video") === 0 || trimmed.indexOf("Settings") === 0) {
+                        inAudioSection = false
                         inSinksSection = false
                         continue
                     }
@@ -54,9 +57,7 @@ Item {
                         continue
                     }
 
-                    // If we're in sinks section, look for sink entries
                     if (inSinksSection) {
-                        // Check if we've hit another subsection (Sources, Filters, Streams)
                         if (trimmed.indexOf("Sources:") !== -1 ||
                             trimmed.indexOf("Filters:") !== -1 ||
                             trimmed.indexOf("Streams:") !== -1) {
@@ -64,14 +65,9 @@ Item {
                             continue
                         }
 
-                        // Skip tree drawing chars, extract meaningful content
-                        // Match patterns like: " *  43. Built-in Audio Analog Stereo  [vol: 1.00]"
-                        // Or without volume: " *  43. Built-in Audio Analog Stereo"
-                        // The line may have ├─ or └─ or spaces before the content
                         var content = line.replace(/^[\s\u2502\u251c\u2514\u2500]*/g, "").trim()
                         if (content.length === 0) continue
 
-                        // Match sink entry: optional *, then ID. description [vol: X.XX]
                         var match = content.match(/^([*]?)\s*(\d+)\.\s+(.+?)(?:\s+\[vol:\s*([\d.]+)\])?\s*$/)
                         if (match) {
                             var sinkId = parseInt(match[2])
@@ -109,7 +105,6 @@ Item {
                         }
                     }
 
-                    // Auto-switch to newest bluetooth sink
                     if (newIds.length > 0) {
                         for (var k = 0; k < result.length; k++) {
                             if (newIds.indexOf(result[k].id) !== -1 && isBluetoothSink(result[k].name)) {
@@ -119,7 +114,6 @@ Item {
                         }
                     }
 
-                    // Revert if current default disappeared
                     if (currentIds.length > 0 && currentIds.indexOf(root.defaultSinkId) === -1 && root._fallbackSinkId !== -1) {
                         if (currentIds.indexOf(root._fallbackSinkId) !== -1) {
                             root.setDefaultSink(root._fallbackSinkId)
@@ -129,6 +123,15 @@ Item {
 
                 root._prevSinkIds = currentIds
                 root.sinks = result
+
+                // Update VolumeService from parsed default sink volume
+                for (var v = 0; v < result.length; v++) {
+                    if (result[v].isDefault && result[v].volume >= 0) {
+                        VolumeService.currentVolume = result[v].volume
+                        VolumeService.volumePercent = Math.min(150, Math.round(result[v].volume * 100))
+                        break
+                    }
+                }
             }
         }
     }

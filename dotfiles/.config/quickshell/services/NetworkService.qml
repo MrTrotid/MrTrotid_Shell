@@ -39,7 +39,7 @@ Item {
 
     Process {
         id: nmUpdate
-        command: ["sh", "-c", "nmcli -t -f ACTIVE,SIGNAL,SSID device wifi list --rescan no | grep '^yes:' | head -1"]
+        command: ["sh", "-c", "nmcli -t -e yes -f ACTIVE,SIGNAL,SSID device wifi list --rescan no | grep '^yes:' | head -1"]
         stdout: StdioCollector {
             onStreamFinished: {
                 var line = text.trim()
@@ -47,8 +47,7 @@ Item {
                     root.networkConnected = false
                     return
                 }
-                // Format: ACTIVE:SIGNAL:SSID (SSID may contain colons)
-                // Find first and second colon positions
+                // Format: ACTIVE:SIGNAL:SSID (-e yes escapes colons as \:)
                 var firstColon = line.indexOf(':')
                 var secondColon = line.indexOf(':', firstColon + 1)
                 if (firstColon === -1) {
@@ -58,6 +57,8 @@ Item {
                 var active = line.substring(0, firstColon)
                 var signal = secondColon === -1 ? line.substring(firstColon + 1) : line.substring(firstColon + 1, secondColon)
                 var ssid = secondColon === -1 ? "" : line.substring(secondColon + 1)
+                // Unescape \: from -e yes mode
+                ssid = ssid.replace(/\\:/g, ":")
 
                 if (active === "yes") {
                     root.networkConnected = true

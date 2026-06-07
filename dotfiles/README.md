@@ -209,11 +209,11 @@ All services live in `quickshell/services/` with `pragma Singleton` + `qmldir` e
 | Service | Description |
 |---------|-------------|
 | ShellState | UI toggle states (activePopup pattern) |
-| ColorService | Reads matugen colors.json with 2s polling |
-| AudioService | wpctl parsing, sink switching, Bluetooth auto-switch |
+| ColorService | Reads matugen colors.json with 2s polling, skips parse if unchanged |
+| AudioService | wpctl status parsing, sink switching, Bluetooth auto-switch, updates VolumeService |
 | BrightnessService | Brightness polling (200ms) + control |
-| VolumeService | Volume polling (200ms) + control |
-| NetworkService | nmcli monitoring |
+| VolumeService | Volume from AudioService (no independent poll), debounced refresh for muted state |
+| NetworkService | nmcli monitoring with `-e yes` SSID escaping |
 | BatteryService | UPower + sysfs, hasBattery guard |
 | SystemService | CPU + memory from /proc (2s poll) |
 | NotificationService | DBus notification server, grouped notifications, toast list, startup sound guard |
