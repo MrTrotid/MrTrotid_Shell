@@ -1,19 +1,20 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import "../services"
 
 Item {
     id: root
 
-    readonly property color _base:    "#131514"
-    readonly property color _crust:   "#1c1e1d"
-    readonly property color _surf1:   "#232524"
-    readonly property color _surf2:   "#2b2d2c"
-    readonly property color _surf3:   "#353937"
-    readonly property color _text:    "#c5cbc9"
-    readonly property color _sub:     "#757d7b"
-    readonly property color _over0:   "#353937"
-    readonly property color _accent:  "#81d5ca"
+    readonly property color _base:    ColorService.surfaceContainerLow
+    readonly property color _crust:   ColorService.surfaceContainer
+    readonly property color _surf1:   ColorService.surfaceContainerHigh
+    readonly property color _surf2:   ColorService.surfaceContainerHighest
+    readonly property color _surf3:   Qt.rgba(ColorService.surfaceContainerHighest.r, ColorService.surfaceContainerHighest.g, ColorService.surfaceContainerHighest.b, 0.85)
+    readonly property color _text:    ColorService.surfaceText
+    readonly property color _sub:     ColorService.surfaceVariantText
+    readonly property color _over0:   ColorService.surfaceContainerHighest
+    readonly property color _accent:  ColorService.primary
 
     property string searchQuery: ""
     property bool showConfirm: false
@@ -416,8 +417,7 @@ Item {
                                                                     root.confirmLabel = modelData.desc
                                                                     root.showConfirm = true
                                                                 } else {
-                                                                    var parts = cmd.split(/\s+/)
-                                                                    Quickshell.execDetached(parts)
+                                                                    Quickshell.execDetached(["sh", "-c", cmd])
                                                                     ShellState.closePopup()
                                                                 }
                                                             } else {
@@ -557,7 +557,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
                     radius: 8
-                    color: confirmMa.containsMouse ? "#b83b3b" : "#8b3535"
+                    color: confirmMa.containsMouse ? ColorService.error : Qt.darker(ColorService.error, 1.2)
 
                     Text {
                         anchors.centerIn: parent
@@ -574,8 +574,7 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            var parts = root.confirmCommand.split(/\s+/)
-                            Quickshell.execDetached(parts)
+                            Quickshell.execDetached(["sh", "-c", root.confirmCommand])
                             root.showConfirm = false
                             ShellState.closePopup()
                         }

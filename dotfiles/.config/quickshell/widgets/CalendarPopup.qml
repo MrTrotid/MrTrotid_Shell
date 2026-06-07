@@ -3,30 +3,31 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import "../services"
 
 Item {
     id: popup
 
     readonly property string scriptsDir: Qt.resolvedUrl("../calendar/").toString().replace("file://", "")
 
-    // ── Colors (match bar theme) ──
-    readonly property color _base: "#131514"
-    readonly property color _mantle: "#0f1110"
-    readonly property color _crust: "#090a09"
-    readonly property color _text: "#c5cbc9"
-    readonly property color _sub1: "#8a9290"
-    readonly property color _sub0: "#6a7270"
-    readonly property color _surf2: "#4a504e"
-    readonly property color _surf1: "#2a2e2c"
-    readonly property color _surf0: "#1c1e1d"
-    readonly property color _over2: "#5a605e"
-    readonly property color _over1: "#3a3f3d"
-    readonly property color _over0: "#2e3331"
-    readonly property color _accent: "#81d5ca"
-    readonly property color _accentLight: "#b2ebe3"
-    readonly property color _green: "#92d5ab"
-    readonly property color _red: "#ffb4ab"
-    readonly property color _peach: "#e8a87c"
+    // ── Colors (bound to matugen via ColorService) ──
+    readonly property color _base:    ColorService.surfaceContainerLow
+    readonly property color _mantle:  Qt.darker(ColorService.surfaceContainer, 1.05)
+    readonly property color _crust:   Qt.darker(ColorService.surfaceContainer, 1.15)
+    readonly property color _text:    ColorService.surfaceText
+    readonly property color _sub1:    ColorService.surfaceVariantText
+    readonly property color _sub0:    Qt.alpha(ColorService.surfaceVariantText, 0.7)
+    readonly property color _surf2:   ColorService.surfaceContainerHighest
+    readonly property color _surf1:   ColorService.surfaceContainerHigh
+    readonly property color _surf0:   ColorService.surfaceContainer
+    readonly property color _over2:   Qt.alpha(ColorService.surfaceContainerHighest, 0.8)
+    readonly property color _over1:   Qt.alpha(ColorService.surfaceContainerHighest, 0.5)
+    readonly property color _over0:   Qt.alpha(ColorService.surfaceContainerHighest, 0.35)
+    readonly property color _accent:  ColorService.primary
+    readonly property color _accentLight: Qt.lighter(ColorService.primary, 1.15)
+    readonly property color _green:   ColorService.success
+    readonly property color _red:     ColorService.error
+    readonly property color _peach:   "#e8a87c"
     readonly property color _lavender: "#cdb4db"
 
     // ── Time of day colors ──
@@ -49,6 +50,7 @@ Item {
     property real transitionSpin: 0.0
     property real transitionScale: 1.0
     property bool visible_: false
+    property bool popupOpenEnough: false
 
     // ── Intro animation ──
     property real introMain: 0
@@ -206,7 +208,14 @@ Item {
     }
 
     Timer {
-        interval: 150000; running: popup.visible_; repeat: true
+        interval: 30000; running: popup.visible_; repeat: true
+        onTriggered: {
+            popup.popupOpenEnough = true
+        }
+    }
+
+    Timer {
+        interval: 1800000; running: popup.visible_ && popup.popupOpenEnough; repeat: true
         onTriggered: weatherPoller.running = true
     }
 
@@ -360,7 +369,6 @@ Item {
                     z: -10; x: -400; y: -200; width: 800; height: 400
                     opacity: 0.25
                     scale: centralHub.orbitBreath
-                    onWidthChanged: requestPaint()
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.clearRect(0, 0, width, height);

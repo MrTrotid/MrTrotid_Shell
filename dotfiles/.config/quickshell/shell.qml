@@ -66,8 +66,10 @@ ShellRoot {
                     if (!main.cursorNearTop) { main.cursorNearTop = true; ShellState.barVisible = true }
                     hideTimer.stop()
                 } else if (y > 50 && !ShellState.keepBarVisible) {
-                    // Close popups when cursor is away from top
-                    if (ShellState.anyPopupOpen) ShellState.closePopup()
+                    // Hide bar on cursor away — do NOT close popups here.
+                    // Each popup handles its own dismissal (Escape, click-outside, or explicit close).
+                    // Closing popups from here causes a race: clicking a bar item opens a popup,
+                    // then cursor check fires and immediately closes it.
                     if (main.cursorNearTop) {
                         main.cursorNearTop = false
                         hideTimer.running = true
@@ -397,7 +399,7 @@ ShellRoot {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  QUICK ACTIONS HUD (bottom-center floating bar)
+//  QUICK ACTIONS HUD (bottom-center floating bar)
     // ═══════════════════════════════════════════════════════════════
     PanelWindow {
         id: qaPopup
@@ -468,20 +470,20 @@ ShellRoot {
             }
         }
 
+        Timer {
+            id: qaFocusTimer
+            interval: 50
+            repeat: false
+            onTriggered: {
+                if (qaLoader.item) {
+                    qaLoader.item.forceActiveFocus()
+                }
+            }
+        }
+
         onVisibleChanged: {
             if (visible && ShellState.quickActionsOpen) {
                 qaFocusTimer.start()
-            }
-        }
-    }
-
-    Timer {
-        id: qaFocusTimer
-        interval: 50
-        repeat: false
-        onTriggered: {
-            if (qaLoader.item) {
-                qaLoader.item.forceActiveFocus()
             }
         }
     }
@@ -541,7 +543,7 @@ ShellRoot {
     // ═══════════════════════════════════════════════════════════════
     PanelWindow {
         id: osdPopup
-        screen: main.screen
+        screen: Quickshell.screens[0]
         color: "transparent"
 
         WlrLayershell.layer: WlrLayer.Overlay

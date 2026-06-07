@@ -445,9 +445,9 @@ Item {
                     property color batColor: {
                         if (!BatteryService.hasBattery || !BatteryService.batteryDevice.ready) return "transparent"
                         var pct = BatteryService.batteryPercent
-                        if (pct >= 60) return "#4ade80"
-                        if (pct >= 30) return "#facc15"
-                        return "#f87171"
+                        if (pct >= 60) return ColorService.success
+                        if (pct >= 30) return ColorService.yellow
+                        return ColorService.error
                     }
                     color: batColor
                     visible: BatteryService.hasBattery && BatteryService.batteryDevice.ready

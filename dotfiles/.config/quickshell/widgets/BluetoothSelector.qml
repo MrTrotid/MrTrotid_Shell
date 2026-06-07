@@ -3,21 +3,22 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
+import "../services"
 
 Item {
     id: root
 
-    readonly property color _base:    "#131514"
-    readonly property color _crust:   "#1c1e1d"
-    readonly property color _surf1:   "#232524"
-    readonly property color _surf2:   "#2b2d2c"
-    readonly property color _text:    "#c5cbc9"
-    readonly property color _sub:     "#757d7b"
-    readonly property color _over0:   "#353937"
-    readonly property color _accent:  "#81d5ca"
-    readonly property color _red:     "#ffb4ab"
-    readonly property color _green:   "#92d5ab"
-    readonly property color accentLight: Qt.lighter(_accent, 1.15)
+    readonly property color _base:    ColorService.surfaceContainerLow
+    readonly property color _crust:   Qt.darker(ColorService.surfaceContainer, 1.05)
+    readonly property color _surf1:   ColorService.surfaceContainerHigh
+    readonly property color _surf2:   ColorService.surfaceContainerHighest
+    readonly property color _text:    ColorService.surfaceText
+    readonly property color _sub:     ColorService.surfaceVariantText
+    readonly property color _over0:   ColorService.surfaceContainerHighest
+    readonly property color _accent:  ColorService.primary
+    readonly property color _red:     ColorService.error
+    readonly property color _green:   ColorService.success
+    readonly property color accentLight: Qt.lighter(ColorService.primary, 1.15)
 
     property bool btEnabled: false
     property var connectedDevices: []
@@ -127,7 +128,7 @@ Item {
         viewMode = "detail"; selectedDevice = device
         deviceBattery = ""
         if (device) {
-            batCheckCmd.command = ["sh", "-c", "bluetoothctl info '" + device.mac + "' 2>/dev/null"]
+            batCheckCmd.command = ["bluetoothctl", "info", device.mac]
             batCheckCmd.running = false; batCheckCmd.running = true
         }
     }
@@ -235,20 +236,21 @@ Item {
 
     function toggleBt() {
         var on = !btEnabled
-        Quickshell.execDetached(["sh", "-c", "bluetoothctl " + (on ? "power on" : "power off")])
+        Quickshell.execDetached(["bluetoothctl", "power", on ? "on" : "off"])
         btEnabled = on
         if (on) btPoll.running = true
     }
 
     function connectDevice(mac) {
-        Quickshell.execDetached(["sh", "-c", "bluetoothctl trust '" + mac + "' >/dev/null 2>&1; bluetoothctl connect '" + mac + "'"])
+        Quickshell.execDetached(["bluetoothctl", "trust", mac])
+        Quickshell.execDetached(["bluetoothctl", "connect", mac])
         deviceBattery = ""
-        batCheckCmd.command = ["sh", "-c", "bluetoothctl info '" + mac + "' 2>/dev/null"]
+        batCheckCmd.command = ["bluetoothctl", "info", mac]
         batCheckCmd.running = false; batCheckCmd.running = true
     }
 
     function disconnectDevice(mac) {
-        Quickshell.execDetached(["sh", "-c", "bluetoothctl disconnect '" + mac + "'"])
+        Quickshell.execDetached(["bluetoothctl", "disconnect", mac])
     }
 
     function triggerScan() {
@@ -269,7 +271,7 @@ Item {
     }
 
     function removeDevice(mac) {
-        Quickshell.execDetached(["sh", "-c", "bluetoothctl remove '" + mac + "'"])
+        Quickshell.execDetached(["bluetoothctl", "remove", mac])
         viewMode = "home"
         _pendingListAll = false; _pendingListConnected = false; _pendingListPaired = false
         btPoll.running = false; btPoll.running = true
@@ -332,11 +334,9 @@ Item {
         anchors.fill: parent
         radius: 16
         color: _base
-        border.color: "#303635"
-        border.width: 1
-        clip: true
+                    border.color: ColorService.outlineVariant
 
-        Rectangle {
+                    Rectangle {
             width: parent.width * 0.8; height: width; radius: width / 2
             x: (parent.width / 2 - width / 2) + Math.cos(root.globalOrbitAngle * 2) * 150
             y: (parent.height / 2 - height / 2) + Math.sin(root.globalOrbitAngle * 2) * 100

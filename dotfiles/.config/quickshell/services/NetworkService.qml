@@ -29,9 +29,9 @@ Item {
     // Debounce after nmcli event
     Timer {
         id: nmPoll
-        interval: 500
+        interval: 1000
         repeat: false
-        onTriggered: nmUpdate.running = true
+        onTriggered: { if (!nmUpdate.running) nmUpdate.running = true }
     }
 
     // Fallback poll every 10 seconds
@@ -47,7 +47,7 @@ Item {
         interval: 2000
         running: true
         repeat: true
-        onTriggered: if (!netSpeed.running) netSpeed.running = true
+        onTriggered: if (!netSpeed.running && !nmUpdate.running) netSpeed.running = true
     }
 
     Process {
@@ -80,6 +80,7 @@ Item {
 
     Process {
         id: nmUpdate
+        running: false
         command: ["sh", "-c", "nmcli -t -e yes -f ACTIVE,SIGNAL,SSID device wifi list --rescan no | grep '^yes:' | head -1"]
         stdout: StdioCollector {
             onStreamFinished: {

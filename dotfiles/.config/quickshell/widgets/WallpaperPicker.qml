@@ -103,10 +103,11 @@ Item {
         const escOriginal = escapeBash(originalFile);
         const escThumb = escapeBash(thumbFile);
 
-        const script = "cp \"" + escThumb + "\" " + paths.getCacheDir("wallpaper_picker") + "/current_wallpaper.png || true\n"
+        const script = "mkdir -p \"" + paths.getCacheDir("wallpaper_picker") + "\"\n"
+            + "cp \"" + escThumb + "\" " + paths.getCacheDir("wallpaper_picker") + "/current_wallpaper.png || true\n"
             + "killall swaybg 2>/dev/null\n"
             + "nohup swaybg -i \"" + escOriginal + "\" -m fill >/dev/null 2>&1 & disown\n"
-            + "(matugen image \"" + escThumb + "\" --prefer darkness 2>/dev/null || true)"
+            + "(matugen image \"" + escOriginal + "\" --prefer darkness 2>/dev/null || true)"
 
         Quickshell.execDetached(["bash", "-c", script]);
     }
@@ -153,23 +154,62 @@ Item {
         return getHexBucket(hexColor) === filter;
     }
 
+    property int _colorExtractBatchSize: 10
+    property var _colorExtractFiles: []
+    property int _colorExtractIndex: 0
+
+    Process {
+        id: colorExtractProcess
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var files = text.trim().split("\n").filter(f => f.length > 0);
+                root._colorExtractFiles = files;
+                root._colorExtractIndex = 0;
+                root._processColorExtractBatch();
+            }
+        }
+    }
+
+    function _processColorExtractBatch() {
+        if (root._colorExtractIndex >= root._colorExtractFiles.length) return;
+
+        var batchEnd = Math.min(root._colorExtractIndex + root._colorExtractBatchSize, root._colorExtractFiles.length);
+        var batchFiles = root._colorExtractFiles.slice(root._colorExtractIndex, batchEnd);
+        root._colorExtractIndex = batchEnd;
+
+        var scriptLines = ["COLOR_DIR=\"" + paths.getCacheDir("wallpaper_picker") + "/colors_markers\"",
+            "mkdir -p \"$COLOR_DIR\"",
+            "if command -v magick &> /dev/null; then CMD=\"magick\"; else CMD=\"convert\"; fi"];
+
+        var escapeBash = (str) => String(str).replace(/(["\\$`])/g, '\\$1');
+
+        for (var i = 0; i < batchFiles.length; i++) {
+            var f = batchFiles[i];
+            var escFile = escapeBash(f);
+            scriptLines.push(
+                "filename=$(basename \"" + escFile + "\")",
+                "found=0",
+                "for marker in \"$COLOR_DIR/$filename\"_HEX_*; do if [ -e \"$marker\" ]; then found=1; break; fi; done",
+                "if [ $found -eq 0 ]; then",
+                "  hex=$($CMD \"" + escFile + "\" -modulate 100,200 -resize \"1x1^\" -gravity center -extent 1x1 -depth 8 -format \"%[hex:p{0,0}]\" info:- 2>/dev/null | grep -oE \"[0-9A-Fa-f]{6}\" | head -n 1)",
+                "  if [ -n \"$hex\" ]; then touch \"$COLOR_DIR/$filename\"_HEX_$hex; fi",
+                "fi"
+            );
+        }
+
+        var script = scriptLines.join("\n");
+        Quickshell.execDetached(["bash", "-c", script]);
+
+        if (root._colorExtractIndex < root._colorExtractFiles.length) {
+            Qt.callLater(100, () => root._processColorExtractBatch());
+        }
+    }
+
     function triggerColorExtraction() {
-        const extractScript = "COLOR_DIR=\"" + paths.getCacheDir("wallpaper_picker") + "/colors_markers\"\n"
-            + "THUMBS=\"" + paths.getCacheDir("wallpaper_picker") + "/thumbs\"\n"
-            + "mkdir -p \"$COLOR_DIR\"\n"
-            + "if command -v magick &> /dev/null; then CMD=\"magick\"; else CMD=\"convert\"; fi\n"
-            + "for file in \"$THUMBS\"/*; do\n"
-            + "  if [ -f \"$file\" ]; then\n"
-            + "    filename=$(basename \"$file\")\n"
-            + "    found=0\n"
-            + "    for marker in \"$COLOR_DIR/$filename\"_HEX_*; do if [ -e \"$marker\" ]; then found=1; break; fi; done\n"
-            + "    if [ $found -eq 0 ]; then\n"
-            + "      hex=$($CMD \"$file\" -modulate 100,200 -resize \"1x1^\" -gravity center -extent 1x1 -depth 8 -format \"%[hex:p{0,0}]\" info:- 2>/dev/null | grep -oE '[0-9A-Fa-f]{6}' | head -n 1)\n"
-            + "      if [ -n \"$hex\" ]; then touch \"$COLOR_DIR/$filename\"_HEX_$hex; fi\n"
-            + "    fi\n"
-            + "  fi\n"
-            + "done"
-        Quickshell.execDetached(["bash", "-c", extractScript]);
+        var thumbDir = paths.getCacheDir("wallpaper_picker") + "/thumbs";
+        colorExtractProcess.command = ["sh", "-c", "find \"" + thumbDir + "\" -type f \\( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.webp' -o -name '*.gif' \\)"];
+        colorExtractProcess.running = true;
     }
 
     FolderListModel {

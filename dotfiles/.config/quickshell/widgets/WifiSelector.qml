@@ -4,22 +4,23 @@ import QtQuick.Controls
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
+import "../services"
 
 Item {
     id: root
 
-    readonly property color _base:    "#131514"
-    readonly property color _mantle:  "#0f1110"
-    readonly property color _crust:   "#1c1e1d"
-    readonly property color _surf0:   "#1c1e1d"
-    readonly property color _surf1:   "#232524"
-    readonly property color _surf2:   "#2b2d2c"
-    readonly property color _text:    "#c5cbc9"
-    readonly property color _sub:     "#757d7b"
-    readonly property color _over0:   "#353937"
-    readonly property color _accent:  "#81d5ca"
-    readonly property color _red:     "#ffb4ab"
-    readonly property color _green:   "#92d5ab"
+    readonly property color _base:    ColorService.surfaceContainerLow
+    readonly property color _mantle:  Qt.darker(ColorService.surfaceContainerLow, 1.1)
+    readonly property color _crust:   ColorService.surfaceContainer
+    readonly property color _surf0:   ColorService.surfaceContainer
+    readonly property color _surf1:   ColorService.surfaceContainerHigh
+    readonly property color _surf2:   ColorService.surfaceContainerHighest
+    readonly property color _text:    ColorService.surfaceText
+    readonly property color _sub:     ColorService.surfaceVariantText
+    readonly property color _over0:   ColorService.surfaceContainerHighest
+    readonly property color _accent:  ColorService.primary
+    readonly property color _red:     ColorService.error
+    readonly property color _green:   ColorService.success
 
     readonly property color accentLight: Qt.lighter(_accent, 1.15)
 
@@ -186,18 +187,18 @@ Item {
     }
 
     function disconnectWifi() {
-        Quickshell.execDetached(["sh", "-c", "nmcli device disconnect $(nmcli -t -f DEVICE,TYPE d | grep wifi | cut -d: -f1 | head -n1)"])
+        Quickshell.execDetached(["nmcli", "device", "disconnect", "wifi"])
         wifiPoll.running = true
     }
 
     function doScan() {
         if (scanning) return; scanning = true; viewMode = "scanning"
-        wifiRescan.command = ["sh", "-c", "nmcli device wifi list --rescan yes 2>/dev/null"]; wifiRescan.running = true
+        wifiRescan.command = ["nmcli", "device", "wifi", "list", "--rescan", "yes"]; wifiRescan.running = true
     }
 
     Component.onCompleted: {
         wifiPowerCheck.running = true
-        wifiRescan.command = ["sh", "-c", "nmcli device wifi list --rescan yes 2>/dev/null"]
+        wifiRescan.command = ["nmcli", "device", "wifi", "list", "--rescan", "yes"]
         wifiRescan.running = true
         savedListProc.running = true
     }
@@ -657,7 +658,7 @@ Item {
                     if (root.viewMode === "saved") {
                         return root.savedNetworks.map(function(n) {
                             var isConnected = root.connectedNetwork && root.connectedNetwork.ssid === n.name
-                            return {type: "saved-net", icon: "\uF02C", name: n.name, subtitle: isConnected ? "Connected" : "Tap to connect", active: isConnected ? "yes" : "no"}
+                            return {type: "saved-net", icon: "\uF02C", name: n.name, ssid: n.name, subtitle: isConnected ? "Connected" : "Tap to connect", active: isConnected ? "yes" : "no"}
                         })
                     }
                     if (root.viewMode === "detail" && root.selectedNetwork) {
@@ -901,13 +902,13 @@ Item {
                                 else if (modelData.type === "nav-saved") { goSaved() }
                                 else if (modelData.type === "network") { goDetail(modelData) }
                                 else if (modelData.type === "saved-net") {
-                                    connectToNetwork(modelData.name, "")
+                                    connectToNetwork(modelData.ssid, "")
                                 }
                                 else if (modelData.type === "disconnect") {
                                     disconnectWifi(); goHome()
                                 }
                                 else if (modelData.type === "forget") {
-                                    Quickshell.execDetached(["sh", "-c", "nmcli connection delete '" + modelData.ssid + "' 2>/dev/null"])
+                                    Quickshell.execDetached(["nmcli", "connection", "delete", modelData.ssid])
                                     savedListProc.running = false; savedListProc.running = true
                                     goHome()
                                 }
@@ -955,6 +956,5 @@ Item {
             }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggleWifi() }
         }
-    }
     } // end wrapping Item
 }

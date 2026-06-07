@@ -270,14 +270,10 @@ Item {
                 root.sinks = result
                 root.sources = resultSources
 
-                // Update VolumeService from parsed default sink volume
-                for (var v = 0; v < result.length; v++) {
-                    if (result[v].isDefault && result[v].volume >= 0) {
-                        VolumeService.currentVolume = result[v].volume
-                        VolumeService.volumePercent = Math.min(150, Math.round(result[v].volume * 100))
-                        break
-                    }
-                }
+                // NOTE: VolumeService is single source of truth for volume
+                // AudioService provides sink info, but volume updates come from AudioService
+                // via the default sink parsing (mic mute poll) and VolumeService independently
+                // monitors via wpctl get-volume @DEFAULT_SINK@
             }
         }
     }

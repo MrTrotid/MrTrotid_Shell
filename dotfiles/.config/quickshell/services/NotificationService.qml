@@ -12,11 +12,13 @@ Item {
     property var notifications: []
     property ListModel toastList: ListModel {}
     property int _maxToasts: 3
+    property int _maxHistory: 200
     property int unread: 0
     property bool silent: false
-    property var activePopup: null
+    property var _activeNotifPopup: null
     property bool _startupPhase: true
     property string _persistPath: Quickshell.env("HOME") + "/.cache/quickshell/notifications.json"
+    property bool _loadingNotifications: false
 
     Timer {
         id: startupGuard
@@ -46,60 +48,78 @@ Item {
     }
 
     function _loadNotifications() {
-        var content = _readFile(_persistPath)
-        if (!content || content.length === 0) return
-        try {
-            var loaded = JSON.parse(content)
-            if (!Array.isArray(loaded)) return
-            var restored = []
-            for (var i = 0; i < loaded.length; i++) {
-                var n = loaded[i]
-                restored.push({
-                    "notificationId": n.notificationId,
-                    "notification": null,
-                    "appName": n.appName || "",
-                    "summary": n.summary || "",
-                    "body": n.body || "",
-                    "appIcon": n.appIcon || "",
-                    "image": n.image || "",
-                    "urgency": n.urgency || "normal",
-                    "time": n.time || 0,
-                    "actions": n.actions || [],
-                    "popup": false
-                })
-            }
-            root.notifications = restored
-            root.unread = restored.length
-        } catch (e) {}
+        _readFile(_persistPath, function(content) {
+            if (!content || content.length === 0) return
+            try {
+                var loaded = JSON.parse(content)
+                if (!Array.isArray(loaded)) return
+                var restored = []
+                for (var i = 0; i < loaded.length; i++) {
+                    var n = loaded[i]
+                    restored.push({
+                        "notificationId": n.notificationId,
+                        "notification": null,
+                        "appName": n.appName || "",
+                        "summary": n.summary || "",
+                        "body": n.body || "",
+                        "appIcon": n.appIcon || "",
+                        "image": n.image || "",
+                        "urgency": n.urgency || "normal",
+                        "time": n.time || 0,
+                        "actions": n.actions || [],
+                        "popup": false
+                    })
+                }
+                root.notifications = restored
+                root.unread = restored.length
+            } catch (e) {}
+        })
     }
 
     function _writeFile(path, content) {
         var proc = _writeFileProc
-        proc._command = "mkdir -p $(dirname \"" + path + "\") && echo '" + Qt.btoa(content).replace(/'/g, "'\\''") + "' | base64 -d > \"" + path + "\""
+        proc._path = path
+        proc._base64 = Qt.btoa(content)
         proc.running = true
     }
 
-    function _readFile(path) {
+    function _readFile(path, onSuccess) {
         var proc = _readFileProc
-        proc.command = ["cat", path]
+        proc._path = path
+        proc._onSuccess = onSuccess
         proc._result = ""
         proc.running = true
-        return proc._result
     }
 
     Process {
         id: _writeFileProc
-        property string _command
-        command: ["sh", "-c", _command]
+        property string _path
+        property string _base64
         running: false
+        onRunningChanged: {
+            if (!running && _base64 !== undefined) {
+                Quickshell.execDetached(["bash", "-c", 
+                    "mkdir -p '" + _path.replace(/[^\/]*$/, "") + "' && echo '" + _base64 + "' | base64 -d > '" + _path + "'"
+                ])
+                _base64 = undefined
+            }
+        }
     }
 
     Process {
         id: _readFileProc
+        property string _path
         property string _result: ""
+        property var _onSuccess: null
         running: false
         stdout: StdioCollector {
-            onStreamFinished: _readFileProc._result = text
+            onStreamFinished: {
+                _readFileProc._result = text
+                if (_readFileProc._onSuccess !== null) {
+                    _readFileProc._onSuccess(text)
+                    _readFileProc._onSuccess = null
+                }
+            }
         }
     }
 
@@ -114,8 +134,8 @@ Item {
         onNotification: (notification) => {
             notification.tracked = true
 
-            if (root.activePopup) {
-                root.activePopup = null
+            if (root._activeNotifPopup) {
+                root._activeNotifPopup = null
             }
 
             var notifObj = {
@@ -134,11 +154,17 @@ Item {
 
             if (!root.silent) {
                 notifObj.popup = true
-                root.activePopup = notifObj
+                root._activeNotifPopup = notifObj
                 root.unread++
             }
 
             root.notifications = [...root.notifications, notifObj]
+
+            // Enforce history cap
+            if (root.notifications.length > root._maxHistory) {
+                var excess = root.notifications.length - root._maxHistory
+                root.notifications = root.notifications.slice(excess)
+            }
 
             if (!root.silent) {
                 if (root.toastList.count >= root._maxToasts) {
@@ -231,7 +257,7 @@ Item {
         }
         root.notifications = []
         root.toastList.clear()
-        root.activePopup = null
+        root._activeNotifPopup = null
         root.unread = 0
         root._saveNotifications()
     }
@@ -264,9 +290,15 @@ Item {
             "popup": true
         }
 
-        root.activePopup = notifObj
+        root._activeNotifPopup = notifObj
         root.unread++
         root.notifications = [...root.notifications, notifObj]
+
+        // Enforce history cap
+        if (root.notifications.length > root._maxHistory) {
+            var excess = root.notifications.length - root._maxHistory
+            root.notifications = root.notifications.slice(excess)
+        }
 
         if (root.toastList.count >= root._maxToasts) {
             var overflow = root.toastList.get(root.toastList.count - 1)
