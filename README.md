@@ -127,7 +127,7 @@ Top bar with exclusiveZone: 48, auto-hides when cursor moves away.
 - Mic indicator: left click = toggle mute, right click = cycle mic sources
 - Network speed: shows ↓/↑ KB/s or MB/s next to WiFi icon when active
 - CPU temperature: color-coded green (<65°), yellow (65-79°), red (≥80°)
-- Battery: hardcoded green/yellow/red colors, text uses colOnPrimary
+- Battery: hardcoded green/yellow/red colors, sky blue when charging, text uses colOnPrimary
 - Window title: capped at 416px max width
 - WiFi icon: solid colPrimary color matching Bluetooth
 
@@ -244,6 +244,8 @@ All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell
 - **Global IPC** for shell toggles (no QML Shortcut elements)
 - **Single NotificationServer** in NotificationService singleton
 - **ColorService** reads matugen JSON with 2s polling for live theme updates
+- **Wallpaper restore** - shell.qml restores last wallpaper on startup from cached current_wallpaper.png
+- **Hypridle** - Screen dim at 7.5min, lock at 10min, screen off + suspend at 30min
 
 ## Troubleshooting
 

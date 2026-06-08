@@ -600,4 +600,15 @@ ShellRoot {
         description: "Toggle quick actions HUD"
         onPressed: ShellState.toggleQuickActions()
     }
+
+    // Restore last wallpaper on startup
+    Process {
+        id: wpRestore
+        running: false
+        command: ["sh", "-c", "WP=\"$HOME/.cache/quickshell/wallpaper_picker/current_wallpaper.png\"; if [ -f \"$WP\" ]; then killall swaybg 2>/dev/null; nohup swaybg -i \"$WP\" -m fill >/dev/null 2>&1 & disown; (matugen image \"$WP\" --prefer darkness 2>/dev/null || true); fi"]
+    }
+
+    Component.onCompleted: {
+        wpRestore.running = true
+    }
 }

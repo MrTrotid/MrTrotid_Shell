@@ -211,6 +211,9 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **Urgency-based notification styling** - Critical notifications get red border and 15s dismiss timeout
 - **Notification persistence** - Notifications saved to ~/.cache/quickshell/notifications.json, restored on reload
 - **Low battery notification** - BatteryService warns at configurable threshold (default 20%), critical urgency toast
+- **Wallpaper restore on startup** - shell.qml restores last wallpaper from current_wallpaper.png on Component.onCompleted
+- **Charging battery color** - Battery pill shows sky blue (#7dd3fc) when charging
+- **Hypridle timeouts** - Dim: 7.5min, Lock: 10min, Screen off/Suspend: 30min
 
 ### False Claims (No Fix Needed)
 - **B3** - SystemService uses Process{}, not FileView

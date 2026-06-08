@@ -43,7 +43,7 @@ Item {
             var d = new Date()
             var hh = String(d.getHours()).padStart(2, "0")
             var mm = String(d.getMinutes()).padStart(2, "0")
-            currentTime = hh + ":" + mm + " "
+            currentTime = hh + ":" + mm
         }
     }
 
@@ -444,6 +444,7 @@ Item {
                     radius: 5
                     property color batColor: {
                         if (!BatteryService.hasBattery || !BatteryService.batteryDevice.ready) return "transparent"
+                        if (BatteryService.isCharging) return "#7dd3fc"
                         var pct = BatteryService.batteryPercent
                         if (pct >= 60) return "#4ade80"
                         if (pct >= 30) return "#facc15"
