@@ -16,7 +16,7 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 - **Emoji picker** - native Quickshell widget with 5 categories, search, click to copy
 - **GIF selector** - native Quickshell widget with Tenor API search, AnimatedImage preview (plays on hover), click to copy URL
 - **Night light toggle** via hyprsunset
-- **Power menu confirm dialog** for dangerous actions
+- **Power menu** - wlogout with HyprNova-style icon buttons (lock/suspend/logout/reboot/power off)
 - **CPU temperature chip** - color-coded (green/yellow/red) in bar
 - **Network speed indicator** - ↓/↑ KB/s or MB/s next to WiFi icon
 - **Low battery notification** - warns at configurable threshold (default 20%)
@@ -28,6 +28,7 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 | `Super + Return` | Terminal (Ghostty) |
 | `Super + Space` | App launcher (Rofi) |
 | `Super + /` | Toggle Cheatsheet |
+| `Super + P` | Toggle power menu |
 | `Super + A` | Toggle notification panel |
 | `Super + J` | Toggle quick actions HUD |
 | `Super + O` | Toggle bar |
@@ -110,6 +111,7 @@ Trotid_Shell/
     │   ├── ClipboardManager.qml  # cliphist integration, search, image preview
     │   ├── EmojiPicker.qml       # 5 categories, search, click to copy
     │   ├── GifPicker.qml         # Tenor API search, AnimatedImage preview
+    │   ├── PowerMenu.qml          # Centered power overlay (lock/suspend/logout/reboot/off)
     │   ├── MediaCard.qml
     │   ├── PlayerCard.qml
     │   ├── WaveVisualizer.qml
@@ -217,6 +219,19 @@ Searchable keybind reference with executable actions.
 - Live filter-as-you-type search
 - Power actions show confirmation dialog
 - Horizontal scrolling with mouse wheel
+</details>
+
+<details>
+<summary><strong>Power Menu (wlogout)</strong></summary>
+
+wlogout with HyprNova-style icon buttons.
+
+**Features:**
+- Shutdown, Reboot, Logout, Hibernate, Lock buttons
+- Circular icon buttons with hover animation (green highlight)
+- Semi-transparent dark overlay background
+- Keybinds: s/r/e/h/l for quick selection
+- `Super + P` to toggle
 </details>
 
 <details>

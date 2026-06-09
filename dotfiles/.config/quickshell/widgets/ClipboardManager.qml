@@ -552,9 +552,7 @@ Item {
     }
 
     function show() {
-        if (!hasLoaded) {
-            refreshHistory();
-        }
+        refreshHistory();
         searchInput.text = "";
         searchInput.cursorVisible = false;
         root.selectedIndex = 0;

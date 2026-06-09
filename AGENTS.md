@@ -8,6 +8,7 @@
   - `~/.config/rofi/colors/colors-matugen.rasi`
   - `~/.config/hypr/colors/*`
   - `~/.cache/wallust/colors-kitty.conf`
+  - `~/.config/wlogout/style.css` (generated from matugen template)
 
 ## Essential Commands
 - Change wallpaper: `wallset` (opens selector) or `Super + W`
@@ -18,6 +19,7 @@
 - Toggle notification panel: `Super + A` (slide-in from right)
 - Toggle quick actions HUD: `Super + J` (slide-up from bottom)
 - Toggle cheatsheet: `Super + /` (keybind reference with executable actions)
+- Toggle power menu: `Super + P` (wlogout overlay — lock/suspend/logout/reboot/power off)
 - Toggle Calendar popup: Click time in bar
 - Cycle workspaces: `Super + Tab` / `Super + Shift + Tab`
 - Lock screen: `Super + Shift + P` (hyprlock)
@@ -157,6 +159,7 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + S` | Scratchpad | togglespecialworkspace |
 | `Super + Shift + N` | Toggle night light | exec (hyprsunset toggle) |
 | `Super + Shift + P` | Lock screen | loginctl lock-session |
+| `Super + P` | Toggle power menu | wlogout |
 | `Super + Shift + L` | Suspend | systemctl suspend |
 | `Ctrl + Super + R` | Restart Quickshell | exec |
 | `Print` | Full screenshot | exec |
@@ -204,6 +207,8 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **OSD for volume/brightness** - OsdPopup.qml with animated popup, progress bar, 2s auto-hide
 - **Power menu confirm dialog** - Cheatsheet shows confirmation for poweroff/reboot/suspend
 - **Night light toggle** - `Super + Shift + N` keybind for hyprsunset
+- **Power menu overlay** - wlogout with HyprNova-style icons, `Super + P` (toggle: pkill || launch), `--buttons-per-row 5` for horizontal layout
+- **wlogout config** - `~/.config/wlogout/` (symlink to `~/Desktop/Trotid_Shell/wlogout/`), Material You CSS via matugen template (`~/.config/matugen/templates/wlogout.css.template`)
 - **Weather location docs** - Updated .env with city ID examples
 - **CPU temperature chip** - SystemService reads coretemp from /sys/class/hwmon, color-coded display in bar
 - **Network speed indicator** - NetworkService reads /proc/net/dev, shows ↓/↑ KB/s or MB/s next to WiFi icon
