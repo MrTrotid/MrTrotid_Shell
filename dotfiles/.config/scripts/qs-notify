@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Send a notification to Quickshell toast system via DBus
+# Usage: qs-notify "title" "body" [icon]
+# Icons: screenshot, recording, clipboard, success, error
+
+title="${1:-Notification}"
+body="${2:-}"
+icon="${3:-}"
+
+# Use notify-send to send via DBus (received by Quickshell's NotificationServer)
+if [ -n "$body" ]; then
+    notify-send -a "Quickshell" -i "$icon" "$title" "$body"
+else
+    notify-send -a "Quickshell" -i "$icon" "$title"
+fi

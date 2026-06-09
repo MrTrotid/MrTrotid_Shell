@@ -214,6 +214,9 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - **Wallpaper restore on startup** - shell.qml restores last wallpaper from current_wallpaper.png on Component.onCompleted
 - **Charging battery color** - Battery pill shows sky blue (#7dd3fc) when charging
 - **Hypridle timeouts** - Dim: 7.5min, Lock: 10min, Screen off/Suspend: 30min
+- **Clipboard manager** - Native Quickshell widget with cliphist integration, search/filter, left side panel
+- **Emoji picker** - Native Quickshell widget with 5 categories, search, click to copy, `Super + period`
+- **GIF selector** - Native Quickshell widget with Tenor API search, AnimatedImage preview (plays on hover), click to copy URL, `Super + comma`
 
 ### False Claims (No Fix Needed)
 - **B3** - SystemService uses Process{}, not FileView

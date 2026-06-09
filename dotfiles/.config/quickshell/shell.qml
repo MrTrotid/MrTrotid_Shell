@@ -537,6 +537,273 @@ ShellRoot {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  CLIPBOARD POPUP (left side, slides in from left)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: clipPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.clipboardPopupOpen || clipLoader.opacity > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: (ShellState.clipboardPopupOpen || clipLoader.opacity > 0) ? WlrLayer.Top : WlrLayer.Background
+        WlrLayershell.namespace: "custom:clipboard"
+        WlrLayershell.keyboardFocus: ShellState.clipboardPopupOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: Math.round((Quickshell.screens[0].height - 700) / 2) - 10
+        margins.left: 0
+        implicitWidth: 420
+        implicitHeight: 700
+
+        Item {
+            id: clipFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Loader {
+            id: clipLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.clipboardPopupOpen
+
+            transform: Translate { id: clipTransform }
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.clipboardPopupOpen
+                    PropertyChanges { target: clipLoader; opacity: 1 }
+                    PropertyChanges { target: clipTransform; x: 0 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.clipboardPopupOpen
+                    PropertyChanges { target: clipLoader; opacity: 0 }
+                    PropertyChanges { target: clipTransform; x: -clipLoader.width - 20 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    ParallelAnimation {
+                        NumberAnimation { target: clipTransform; property: "x"; duration: 350; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: clipLoader; property: "opacity"; duration: 250; easing.type: Easing.OutCubic }
+                    }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    ParallelAnimation {
+                        NumberAnimation { target: clipTransform; property: "x"; duration: 300; easing.type: Easing.InCubic }
+                        NumberAnimation { target: clipLoader; property: "opacity"; duration: 200; easing.type: Easing.InCubic }
+                    }
+                }
+            ]
+
+            sourceComponent: Item {
+                ClipboardManager {
+                    id: clipInner
+                    anchors.fill: parent
+                }
+
+                Connections {
+                    target: ShellState
+                    function onClipboardPopupOpenChanged() {
+                        if (ShellState.clipboardPopupOpen) {
+                            clipInner.show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  EMOJI POPUP (left side, slides in from left)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: emojiPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.emojiPopupOpen || emojiLoader.opacity > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: (ShellState.emojiPopupOpen || emojiLoader.opacity > 0) ? WlrLayer.Top : WlrLayer.Background
+        WlrLayershell.namespace: "custom:emoji"
+        WlrLayershell.keyboardFocus: ShellState.emojiPopupOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: Math.round((Quickshell.screens[0].height - 560) / 2) - 10
+        margins.left: 0
+        implicitWidth: 380
+        implicitHeight: 560
+
+        Item {
+            id: emojiFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Loader {
+            id: emojiLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.emojiPopupOpen
+
+            transform: Translate { id: emojiTransform }
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.emojiPopupOpen
+                    PropertyChanges { target: emojiLoader; opacity: 1 }
+                    PropertyChanges { target: emojiTransform; x: 0 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.emojiPopupOpen
+                    PropertyChanges { target: emojiLoader; opacity: 0 }
+                    PropertyChanges { target: emojiTransform; x: -emojiLoader.width - 20 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    ParallelAnimation {
+                        NumberAnimation { target: emojiTransform; property: "x"; duration: 350; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: emojiLoader; property: "opacity"; duration: 250; easing.type: Easing.OutCubic }
+                    }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    ParallelAnimation {
+                        NumberAnimation { target: emojiTransform; property: "x"; duration: 300; easing.type: Easing.InCubic }
+                        NumberAnimation { target: emojiLoader; property: "opacity"; duration: 200; easing.type: Easing.InCubic }
+                    }
+                }
+            ]
+
+            sourceComponent: Item {
+                EmojiPicker {
+                    id: emojiInner
+                    anchors.fill: parent
+                }
+
+                Connections {
+                    target: ShellState
+                    function onEmojiPopupOpenChanged() {
+                        if (ShellState.emojiPopupOpen) {
+                            emojiInner.show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  GIF POPUP (left side, slides in from left)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: gifPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.gifPopupOpen || gifLoader.opacity > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: (ShellState.gifPopupOpen || gifLoader.opacity > 0) ? WlrLayer.Top : WlrLayer.Background
+        WlrLayershell.namespace: "custom:gif"
+        WlrLayershell.keyboardFocus: ShellState.gifPopupOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: Math.round((Quickshell.screens[0].height - 600) / 2) - 10
+        margins.left: 0
+        implicitWidth: 420
+        implicitHeight: 600
+
+        Item {
+            id: gifFocusCatcher
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Loader {
+            id: gifLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.gifPopupOpen
+
+            transform: Translate { id: gifTransform }
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.gifPopupOpen
+                    PropertyChanges { target: gifLoader; opacity: 1 }
+                    PropertyChanges { target: gifTransform; x: 0 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.gifPopupOpen
+                    PropertyChanges { target: gifLoader; opacity: 0 }
+                    PropertyChanges { target: gifTransform; x: -gifLoader.width - 20 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    ParallelAnimation {
+                        NumberAnimation { target: gifTransform; property: "x"; duration: 350; easing.type: Easing.OutCubic }
+                        NumberAnimation { target: gifLoader; property: "opacity"; duration: 250; easing.type: Easing.OutCubic }
+                    }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    ParallelAnimation {
+                        NumberAnimation { target: gifTransform; property: "x"; duration: 300; easing.type: Easing.InCubic }
+                        NumberAnimation { target: gifLoader; property: "opacity"; duration: 200; easing.type: Easing.InCubic }
+                    }
+                }
+            ]
+
+            sourceComponent: Item {
+                GifPicker {
+                    id: gifInner
+                    anchors.fill: parent
+                }
+
+                Connections {
+                    target: ShellState
+                    function onGifPopupOpenChanged() {
+                        if (ShellState.gifPopupOpen) {
+                            gifInner.show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  OSD POPUP (volume/brightness feedback)
     // ═══════════════════════════════════════════════════════════════
     PanelWindow {
@@ -599,6 +866,24 @@ ShellRoot {
         name: "quickActionsToggle"
         description: "Toggle quick actions HUD"
         onPressed: ShellState.toggleQuickActions()
+    }
+
+    GlobalShortcut {
+        name: "clipboardToggle"
+        description: "Toggle clipboard manager"
+        onPressed: ShellState.toggleClipboardPopup()
+    }
+
+    GlobalShortcut {
+        name: "emojiToggle"
+        description: "Toggle emoji picker"
+        onPressed: ShellState.toggleEmojiPopup()
+    }
+
+    GlobalShortcut {
+        name: "gifToggle"
+        description: "Toggle GIF picker"
+        onPressed: ShellState.toggleGifPopup()
     }
 
     // Restore last wallpaper on startup

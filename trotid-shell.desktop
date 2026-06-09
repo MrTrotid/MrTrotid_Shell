@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Trotid Shell
+Comment=Quickshell desktop shell with scrolling layout
+Exec=/home/mrtrotid-ssd/Desktop/Trotid_Shell/start-trotid.sh
+Type=Application
+DesktopNames=Hyprland

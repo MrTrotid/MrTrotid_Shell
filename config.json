@@ -1,0 +1,57 @@
+{
+    "bar": {
+        "alignment": 0,
+        "marginHorizontal": 12,
+        "marginVertical": 6,
+        "opacity": 0.95,
+        "pillRadius": 16,
+        "position": 0
+    },
+    "features": {
+        "enableAntiFlashbang": true,
+        "enableControlCenter": true,
+        "enableDashboard": true,
+        "enableLauncher": true,
+        "enableNotifications": true,
+        "enableOSD": true,
+        "enableOverview": true,
+        "enablePowerMenu": true,
+        "enableScreenTranslator": true,
+        "enableSidebarLeft": true,
+        "enableSidebarRight": true
+    },
+    "network": {
+        "wifiPollIntervalMs": 5000
+    },
+    "notifications": {
+        "maxVisible": 5,
+        "timeoutMs": 7000
+    },
+    "panel": {
+        "animationDuration": 250,
+        "opacity": 0.95,
+        "radius": 24,
+        "width": 320
+    },
+    "scrolling": {
+        "columnWidth": 0.5,
+        "scrollSensitivity": 1
+    },
+    "system": {
+        "cpuUpdateIntervalMs": 2000,
+        "memoryUpdateIntervalMs": 2000,
+        "tempUpdateIntervalMs": 5000
+    },
+    "theme": {
+        "accentColor": "#cba6f7",
+        "bgPill": "#14161d",
+        "borderPill": "#222530",
+        "fontFamily": "JetBrainsMono",
+        "iconFontFamily": "Material Symbols Rounded",
+        "monoFontFamily": "JetBrainsMono Nerd Font",
+        "surface": "#1e1e2e",
+        "surfaceVariant": "#313244",
+        "textMuted": "#9399b2",
+        "textPrimary": "#cdd6f4"
+    }
+}

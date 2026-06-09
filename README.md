@@ -12,6 +12,9 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 - **Quick Actions HUD** with keyboard navigation and executable actions
 - **OSD** for volume/brightness/mic feedback
 - **Cheatsheet** - searchable keybind reference with executable actions
+- **Clipboard manager** - native Quickshell widget with cliphist integration, search/filter, image preview
+- **Emoji picker** - native Quickshell widget with 5 categories, search, click to copy
+- **GIF selector** - native Quickshell widget with Tenor API search, AnimatedImage preview (plays on hover), click to copy URL
 - **Night light toggle** via hyprsunset
 - **Power menu confirm dialog** for dangerous actions
 - **CPU temperature chip** - color-coded (green/yellow/red) in bar
@@ -30,7 +33,9 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 | `Super + O` | Toggle bar |
 | `Super + M` | Toggle media card |
 | `Ctrl + Super + T` | Toggle wallpaper picker |
-| `Super + V` | Clipboard history |
+| `Super + V` | Toggle clipboard manager |
+| `Super + .` | Toggle emoji picker |
+| `Super + ,` | Toggle GIF picker |
 | `Super + W` | Browser (Zen) |
 | `Super + E` | File manager (Thunar) |
 | `Super + Shift + N` | Toggle night light |
@@ -102,6 +107,9 @@ Trotid_Shell/
     │   ├── QuickActions.qml      # Bottom-center floating action bar
     │   ├── Cheatsheet.qml        # Searchable keybind reference
     │   ├── OsdPopup.qml          # Volume/brightness OSD
+    │   ├── ClipboardManager.qml  # cliphist integration, search, image preview
+    │   ├── EmojiPicker.qml       # 5 categories, search, click to copy
+    │   ├── GifPicker.qml         # Tenor API search, AnimatedImage preview
     │   ├── MediaCard.qml
     │   ├── PlayerCard.qml
     │   ├── WaveVisualizer.qml
@@ -211,6 +219,47 @@ Searchable keybind reference with executable actions.
 - Horizontal scrolling with mouse wheel
 </details>
 
+<details>
+<summary><strong>Clipboard Manager</strong></summary>
+
+Native clipboard history widget with cliphist integration.
+
+**Features:**
+- Batch reads clipboard history via `cliphist list` (fast bulk parse)
+- Search/filter with debounced input
+- Image preview (decodes to /tmp for preview)
+- Click to copy, keyboard navigation
+- Left-side panel (topLeftRadius: 0, bottomLeftRadius: 0)
+- `Super + V` to toggle
+</details>
+
+<details>
+<summary><strong>Emoji Picker</strong></summary>
+
+Native emoji picker with 5 categories.
+
+**Features:**
+- Categories: Smileys, Gestures, Nature, Objects, Symbols
+- Text search via emojiNames mapping
+- Click to copy via wl-copy
+- Left-side panel with slide animation
+- `Super + .` to toggle
+</details>
+
+<details>
+<summary><strong>GIF Picker</strong></summary>
+
+Native GIF search powered by Tenor API.
+
+**Features:**
+- Tenor API search with 350ms debounce
+- AnimatedImage preview - plays on hover only
+- Click to copy GIF URL via wl-copy
+- Loading spinner and error fallback
+- Dynamic grid sizing (adapts to container width)
+- `Super + ,` to toggle
+</details>
+
 ## Services
 
 All services live in `quickshell/services/` with `pragma Singleton` + `qmldir` entry.
@@ -274,6 +323,7 @@ journalctl --user -u quickshell -f
 - **Bar design** - inspired by Noro18/linux-ricing-dotfiles
 - **Notification panel** - inspired by nandoroid (custom dependencies not available)
 - **Coverflow wallpaper picker** - inspired by ilyamiro's wallpaper carousel
+- **GIF search** - powered by Tenor API (Google)
 - **Compositor** - Hyprland
 - **QML framework** - Quickshell
 - **Material You color generation** - matugen
