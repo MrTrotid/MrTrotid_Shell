@@ -7,7 +7,7 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 - **Hyprland 0.55+** with scrolling layout, gestures, layerrules
 - **Quickshell 0.3.0** - singleton services, global IPC, Wayland layer shell
 - **Material You** color scheme via matugen (auto-generates M3 colors from wallpaper)
-- **Notification system** with DBus server, grouped notifications, toasts, action buttons, urgency styling, persistence
+- **Notification system** with DBus server, grouped notifications, toasts, action buttons (keeps original NotificationAction refs for invoke()), urgency styling, persistence
 - **Coverflow wallpaper picker** with thumbnails and filter bar
 - **Quick Actions HUD** with keyboard navigation and executable actions
 - **OSD** for volume/brightness/mic feedback
@@ -166,8 +166,9 @@ Stacked notification toasts below the bar.
 - Nerd font icons only (no system appIcon mismatch)
 - Resolves app icons from system hicolor/pixmaps dirs; falls back to Nerd Font icons
 - Startup sound guard: 1.5s delay prevents replayed notifications from playing sound on reload
-- Action buttons: chip buttons for notification actions (Reply, Dismiss, etc.)
+- Action buttons: prominent separated buttons at bottom of toast (keeps original NotificationAction refs for invoke)
 - Urgency styling: Critical notifications get red border and 15s dismiss timeout
+- Pause on hover: dismiss timer pauses when cursor hovers over toast
 - Persistence: Notifications saved to ~/.cache/quickshell/notifications.json, restored on reload
 </details>
 

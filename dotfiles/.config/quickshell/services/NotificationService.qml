@@ -128,7 +128,7 @@ Item {
                 "image": notification.image ?? "",
                 "urgency": notification.urgency?.toString() ?? "normal",
                 "time": Date.now(),
-                "actions": notification.actions ? notification.actions.map(a => ({identifier: a.identifier, text: a.text})) : [],
+                "actions": notification.actions ? notification.actions.map(a => ({identifier: a.identifier, text: a.text, _ref: a})) : [],
                 "popup": false
             }
 
@@ -292,16 +292,15 @@ Item {
         var notif = root.notifications.find(n => n.notificationId === id)
         if (!notif || !notif.notification) return
 
+        var action = null
         if (actionIdentifier === "default") {
-            if (typeof notif.notification.invokeDefaultAction === "function") {
-                notif.notification.invokeDefaultAction()
-            } else {
-                var action = notif.actions.find(a => a.identifier === "default" || a.identifier === "")
-                if (action) action.invoke()
-            }
+            action = notif.actions.find(a => a.identifier === "default" || a.identifier === "" || a.identifier === "0")
         } else {
-            var action = notif.actions.find(a => a.identifier === actionIdentifier)
-            if (action) action.invoke()
+            action = notif.actions.find(a => a.identifier === actionIdentifier)
+        }
+
+        if (action && action._ref) {
+            action._ref.invoke()
         }
 
         root.discardNotification(id)

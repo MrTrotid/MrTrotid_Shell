@@ -115,7 +115,17 @@ ShellRoot {
         margins.left: (sw - 340) / 2
 
         implicitWidth: 340
-        implicitHeight: 64 + (Math.min(NotificationService.toastList.count, 3) - 1) * 10
+        implicitHeight: {
+            var count = Math.min(NotificationService.toastList.count, 3)
+            if (count === 0) return 0
+            var h = 0
+            for (var i = 0; i < count; i++) {
+                var entry = NotificationService.toastList.get(i)
+                h += (entry && entry.actions && entry.actions.length > 0) ? 92 : 64
+                if (i > 0) h += 10
+            }
+            return h
+        }
 
         NotificationPopup {
             id: toastContent

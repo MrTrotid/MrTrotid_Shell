@@ -26,11 +26,12 @@ Item {
             required property string urgency
 
             width: 320
-            height: 64 + (notif.actions && notif.actions.length > 0 ? 28 : 0)
+            height: 64 + (notif.actions && notif.actions.length > 0 ? 36 : 0)
             z: 100 - index
 
             property string title: summary || ""
             property bool exiting: false
+            property bool hovered: false
             property var iconCandidates: Utils.getAppIconCandidates(notif.appName, notif.appIcon)
             property int iconCandidateIdx: 0
             property string resolvedIcon: {
@@ -117,9 +118,9 @@ Item {
 
             Timer {
                 id: dismissTimer
-                interval: notif.urgency === "critical" ? 15000 : 3500
+                interval: notif.urgency === "critical" ? 15000 : 4000
                 repeat: false
-                running: notif.urgency !== "critical"
+                running: notif.urgency !== "critical" && !notif.hovered
                 onTriggered: {
                     notif.exiting = true
                     exitAnim.start()
@@ -154,6 +155,19 @@ Item {
                 color: "#1a1c1e"
                 border.width: notif.urgency === "critical" ? 2 : 1
                 border.color: notif.urgency === "critical" ? Qt.rgba(0.95, 0.30, 0.30, 0.8) : Qt.alpha(ColorService.outlineVariant, 0.3)
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: {
+                        notif.hovered = true
+                        if (!dismissTimer.repeat && dismissTimer.running) {
+                            dismissTimer.stop()
+                            dismissTimer.start()
+                        }
+                    }
+                    onExited: notif.hovered = false
+                }
 
                 Rectangle {
                     id: glowBg
@@ -243,40 +257,54 @@ Item {
                         width: parent.width
                         visible: text.length > 0
                     }
+                }
+            }
 
-                    Row {
-                        visible: notif.actions && notif.actions.length > 0
-                        spacing: 6
-                        anchors.topMargin: 2
+            Rectangle {
+                id: actionRow
+                visible: notif.actions && notif.actions.length > 0
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                anchors.bottomMargin: 8
+                height: 28
+                radius: 10
+                color: "#22252a"
 
-                        Repeater {
-                            model: notif.actions || []
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
 
-                            delegate: Rectangle {
-                                required property var modelData
-                                width: actionLabel.implicitWidth + 16
-                                height: 22
-                                radius: 6
-                                color: actionMouse.containsMouse ? Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.25) : Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.10)
-                                border.width: 1
-                                border.color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.2)
+                    Repeater {
+                        model: notif.actions || []
 
-                                Text {
-                                    id: actionLabel
-                                    anchors.centerIn: parent
-                                    text: modelData.text || ""
-                                    color: notif.appAccent
-                                    font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: 10
-                                }
+                        delegate: Rectangle {
+                            required property var modelData
+                            width: Math.max(actionLabel.implicitWidth + 20, 60)
+                            height: 24
+                            radius: 8
+                            color: actionMouse.containsMouse ? Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.35) : Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.12)
+                            border.width: 1
+                            border.color: Qt.rgba(notif.appAccent.r, notif.appAccent.g, notif.appAccent.b, 0.25)
 
-                                MouseArea {
-                                    id: actionMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: NotificationService.attemptInvokeAction(notif.notificationId, modelData.identifier)
-                                }
+                            Text {
+                                id: actionLabel
+                                anchors.centerIn: parent
+                                text: modelData.text || "Action"
+                                color: notif.appAccent
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: actionMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: NotificationService.attemptInvokeAction(notif.notificationId, modelData.identifier)
                             }
                         }
                     }

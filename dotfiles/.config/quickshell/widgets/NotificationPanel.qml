@@ -329,6 +329,45 @@ Item {
                                                                 maximumLineCount: groupDelegate.isExpanded ? 100 : 1
                                                                 opacity: 0.8
                                                             }
+
+                                                            // Action buttons (expanded only)
+                                                            Row {
+                                                                visible: groupDelegate.isExpanded && notifItem.modelData.actions && notifItem.modelData.actions.length > 0
+                                                                spacing: 6
+                                                                Layout.topMargin: 4
+
+                                                                Repeater {
+                                                                    model: groupDelegate.isExpanded ? (notifItem.modelData.actions || []) : []
+
+                                                                    delegate: Rectangle {
+                                                                        required property var modelData
+                                                                        width: Math.max(panelActionLabel.implicitWidth + 20, 50)
+                                                                        height: 22
+                                                                        radius: 6
+                                                                        color: panelActionMouse.containsMouse ? Qt.alpha(colPrimary, 0.3) : Qt.alpha(colPrimary, 0.08)
+                                                                        border.width: 1
+                                                                        border.color: Qt.alpha(colPrimary, 0.15)
+
+                                                                        Text {
+                                                                            id: panelActionLabel
+                                                                            anchors.centerIn: parent
+                                                                            text: modelData.text || "Action"
+                                                                            color: colPrimary
+                                                                            font.family: "JetBrainsMono Nerd Font"
+                                                                            font.pixelSize: 10
+                                                                            font.bold: true
+                                                                        }
+
+                                                                        MouseArea {
+                                                                            id: panelActionMouse
+                                                                            anchors.fill: parent
+                                                                            hoverEnabled: true
+                                                                            cursorShape: Qt.PointingHandCursor
+                                                                            onClicked: NotificationService.attemptInvokeAction(notifItem.modelData.notificationId, modelData.identifier)
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
                                                         }
 
                                                         MouseArea {

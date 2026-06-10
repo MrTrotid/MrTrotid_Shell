@@ -31,6 +31,8 @@ Item {
                 { keys: "Super + M",        desc: "Toggle media card" },
                 { keys: "Ctrl + Super + T", desc: "Toggle wallpaper picker" },
                 { keys: "Super + /",        desc: "Toggle cheatsheet" },
+                { keys: "Super + .",        desc: "Toggle emoji picker" },
+                { keys: "Super + ,",        desc: "Toggle GIF picker" },
                 { keys: "Ctrl + Super + R", desc: "Restart shell" }
             ]
         },
@@ -40,7 +42,7 @@ Item {
             binds: [
                 { keys: "Super + Enter",     desc: "Terminal (Ghostty)",  action: "ghostty" },
                 { keys: "Super + Space",     desc: "App launcher (Rofi)", action: "bash ~/.config/rofi/launchers/type-1/launcher.sh" },
-                { keys: "Super + V",         desc: "Clipboard history",   action: "bash ~/.config/scripts/clipboard-picker.sh" },
+                { keys: "Super + V",         desc: "Clipboard manager" },
                 { keys: "Super + W",         desc: "Browser (Zen)",       action: "zen-browser" },
                 { keys: "Super + Shift + W", desc: "Browser (Brave)",     action: "brave-browser" },
                 { keys: "Super + E",         desc: "File manager",        action: "thunar" },
@@ -56,7 +58,6 @@ Item {
                 { keys: "Super + Shift + Arrows",  desc: "Move window" },
                 { keys: "Super + Q",               desc: "Close window" },
                 { keys: "Super + G",               desc: "Toggle floating" },
-                { keys: "Super + P",               desc: "Pin window" },
                 { keys: "Super + F",               desc: "Fullscreen (workspace)" },
                 { keys: "Super + Shift + F",       desc: "Fullscreen (real)" }
             ]
@@ -79,10 +80,11 @@ Item {
             name: "Session",
             icon: "\uF0AC",
             binds: [
-                { keys: "Super + Shift + P",         desc: "Lock screen",  action: "hyprlock" },
-                { keys: "Super + Shift + L",         desc: "Suspend",      action: "systemctl suspend || loginctl suspend" },
-                { keys: "Ctrl+Shift+Alt+Super+Del",  desc: "Power off",    action: "systemctl poweroff || loginctl poweroff" },
-                { keys: "Ctrl+Shift+Alt+Super+End",  desc: "Reboot",       action: "systemctl reboot || loginctl reboot" }
+                { keys: "Super + P",                desc: "Power menu",       action: "pkill wlogout || wlogout --protocol layer-shell --buttons-per-row 5" },
+                { keys: "Super + Shift + P",        desc: "Lock screen",      action: "loginctl lock-session" },
+                { keys: "Super + Shift + L",        desc: "Suspend",          action: "systemctl suspend || loginctl suspend" },
+                { keys: "Ctrl+Shift+Alt+Super+Del", desc: "Power off",        action: "systemctl poweroff || loginctl poweroff" },
+                { keys: "Ctrl+Shift+Alt+Super+End", desc: "Reboot",           action: "systemctl reboot || loginctl reboot" }
             ]
         },
         {

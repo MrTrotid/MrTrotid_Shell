@@ -73,7 +73,7 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - `NetworkService.qml` - nmcli monitoring with `-e yes` SSID escaping, network speed from /proc/net/dev
   - `BatteryService.qml` - UPower + sysfs, hasBattery guard, low battery notification at configurable threshold
   - `SystemService.qml` - CPU + memory + temperature from /proc (2s poll)
-  - `NotificationService.qml` - DBus notification server, grouped notifications, toast list, startup sound guard (1.5s), persistence to ~/.cache/quickshell/notifications.json, action buttons, urgency-based styling
+  - `NotificationService.qml` - DBus notification server, grouped notifications, toast list, startup sound guard (1.5s), persistence to ~/.cache/quickshell/notifications.json, action buttons (keeps NotificationAction refs for invoke()), urgency-based styling
   - `ColorService.qml` - Reads matugen colors.json via `Process` + `cat` (2s polling) — requires `import Quickshell` for `Quickshell.env("HOME")`
 - `BarContent.qml` - Bar layout, binds to singleton services
 - `widgets/` - All popup widgets including OsdPopup.qml, ClipboardManager.qml, EmojiPicker.qml, GifPicker.qml, PowerMenu.qml
@@ -96,7 +96,7 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **PanelWindow doesn't support anchors.horizontalCenter** - Use `anchors.left: true` with calculated `margins.left`
 - **Low battery notification** - BatteryService warns at configurable threshold (default 20%), critical urgency toast
 - **Notification persistence** - Saved to ~/.cache/quickshell/notifications.json, restored on reload
-- **Notification action buttons** - Chip buttons for notification actions (Reply, Dismiss, etc.)
+- **Notification action buttons** - Chip buttons for notification actions (Reply, Dismiss, etc.) — keeps original NotificationAction refs for invoke()
 - **Urgency-based styling** - Critical notifications get red border and 15s dismiss timeout
 - **CPU temperature** - SystemService reads coretemp from /sys/class/hwmon, color-coded (green/yellow/red)
 - **Network speed** - NetworkService reads /proc/net/dev wlan0, shows KB/s or MB/s next to WiFi icon
