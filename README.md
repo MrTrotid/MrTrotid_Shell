@@ -127,7 +127,7 @@ Trotid_Shell/
 <details>
 <summary><strong>Bar</strong></summary>
 
-Top bar with exclusiveZone: 48, auto-hides when cursor moves away.
+Top bar with exclusiveZone: 34, auto-hides when cursor moves away.
 
 **Layout:** Left (workspaces, media) -> Center (clock) -> Right (volume, brightness, cpu, temp, battery, bluetooth, wifi+speed, tray)
 

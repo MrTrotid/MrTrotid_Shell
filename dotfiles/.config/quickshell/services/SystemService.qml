@@ -55,13 +55,13 @@ Item {
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
-                var match = text.match(/^cpu\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/)
-                if (!match) return
+                var parts = text.split(/\s+/)
+                if (parts.length < 5) return
 
-                var user = parseInt(match[1])
-                var nice = parseInt(match[2])
-                var system = parseInt(match[3])
-                var idle = parseInt(match[4])
+                var user = parseInt(parts[1])
+                var nice = parseInt(parts[2])
+                var system = parseInt(parts[3])
+                var idle = parseInt(parts[4])
                 var total = user + nice + system + idle
 
                 if (root.previousCpuStats) {

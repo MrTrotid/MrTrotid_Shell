@@ -15,10 +15,10 @@ import "services"
 ShellRoot {
     id: root
 
-    readonly property real barTopMargin: 10
-    readonly property real barHeight: 36
+    readonly property real barTopMargin: 5
+    readonly property real barHeight: 28
     readonly property real barGap: 4
-    readonly property real popupGap: 2
+    readonly property real popupGap: 1
     readonly property real sideMargin: 8
     readonly property real sw: main.screen?.width ?? Quickshell.screens[0]?.width ?? 1920
 
@@ -963,7 +963,25 @@ ShellRoot {
         command: ["sh", "-c", "WP=\"$HOME/.cache/quickshell/wallpaper_picker/current_wallpaper.png\"; if [ -f \"$WP\" ]; then killall swaybg 2>/dev/null; nohup swaybg -i \"$WP\" -m fill >/dev/null 2>&1 & disown; (matugen image \"$WP\" --prefer darkness 2>/dev/null || true); fi"]
     }
 
+    // Check polkit agent on startup
+    Timer {
+        id: polkitCheck
+        interval: 3000
+        repeat: false
+        running: false
+        onTriggered: {
+            polkitCheckProc.running = true;
+        }
+    }
+
+    Process {
+        id: polkitCheckProc
+        running: false
+        command: ["sh", "-c", "pgrep -x hyprpolkitagent || (hyprpolkitagent &)"]
+    }
+
     Component.onCompleted: {
         wpRestore.running = true
+        polkitCheck.running = true
     }
 }
