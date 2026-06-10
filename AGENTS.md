@@ -38,11 +38,11 @@
 - wlogout: `~/.config/wlogout/` (symlink to `~/Desktop/Trotid_Shell/wlogout/`)
 
 ## Theming Pipeline
-1. Wallpaper set via `wallset` or `wallset-backend-startup`
-2. `swaybg` updates wallpaper
-3. `matugen` generates Material You colors -> ColorService reads `colors.json`
-4. `wallust` generates terminal colors -> Kitty, Hyprland
-5. Components reload/apply on next start
+1. Wallpaper set via `wallset` (rofi selector), `Ctrl+Super+T` (Quickshell picker), or `wallset-backend-startup`
+2. `wallset-backend` runs: `swaybg` (wallpaper), `wallust` (terminal colors), `matugen` (Material You colors), `pywal_cava`, lock screen bg copy, swaync restart
+3. `ColorService` reads `colors.json` via `Process` + `cat` (2s polling) — updates bar and popup colors live
+4. `wallust` generates terminal colors -> Kitty, Hyprland, waybar, rofi
+5. All components update live via singleton service bindings
 
 ## Quickshell Config Structure
 All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.config/quickshell/{custom,mrtrotid-shell}`):
@@ -74,7 +74,7 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
   - `BatteryService.qml` - UPower + sysfs, hasBattery guard, low battery notification at configurable threshold
   - `SystemService.qml` - CPU + memory + temperature from /proc (2s poll)
   - `NotificationService.qml` - DBus notification server, grouped notifications, toast list, startup sound guard (1.5s), persistence to ~/.cache/quickshell/notifications.json, action buttons, urgency-based styling
-  - `ColorService.qml` - Reads matugen colors.json with 2s polling, skips parse if unchanged
+  - `ColorService.qml` - Reads matugen colors.json via `Process` + `cat` (2s polling) — requires `import Quickshell` for `Quickshell.env("HOME")`
 - `BarContent.qml` - Bar layout, binds to singleton services
 - `widgets/` - All popup widgets including OsdPopup.qml, ClipboardManager.qml, EmojiPicker.qml, GifPicker.qml, PowerMenu.qml
 - `core/NotificationUtils.js` - Time formatting, icon resolution from system dirs, and icon mapping
@@ -110,6 +110,9 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **Wallpaper thumbnails pre-generated** - In `~/.cache/quickshell/wallpaper_picker/thumbs/`
 - **Night light toggle** - `Super + Shift + N` toggles hyprsunset on/off
 - **Weather location configurable** - Edit `calendar/.env` with OpenWeatherMap city ID
+- **Wallpaper picker uses wallset-backend** - Calls `$HOME/.local/bin/wallset-backend` (full path required) for unified theming pipeline
+- **ColorService uses Process+cat** - `FileView.reload()` doesn't detect atomic file rewrites; `Process` + `cat` forces fresh read every 2s
+- **Quickshell.env() requires `import Quickshell`** - Not included in `Quickshell.Io`; missing import causes `ReferenceError: Quickshell is not defined` at runtime
 
 ## Scripts
 All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell/scripts/`).
@@ -190,3 +193,16 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - Test clipboard manager: `Super + V`
 - Test emoji picker: `Super + .`
 - Test GIF picker: `Super + ,`
+
+## Troubleshooting
+
+**Colors not updating at runtime:**
+- ColorService uses `Process` + `cat` to read `colors.json` every 2s (FileView doesn't detect atomic rewrites)
+- Requires `import Quickshell` (not just `Quickshell.Io`) for `Quickshell.env("HOME")`
+- Missing import causes silent `ReferenceError: Quickshell is not defined` — bar shows only hardcoded fallback colors
+- Check logs: `quickshell -c mrtrotid-shell log | grep -i color`
+
+**Wallpaper picker not applying:**
+- Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH
+- wallset-backend runs swaybg, wallust, matugen, pywal_cava, lock screen bg copy, swaync restart
+- If picker freezes, check if `sudo -n true` fails (wallset-backend tries sudo for SDDM copy)

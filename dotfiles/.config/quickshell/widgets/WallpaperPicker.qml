@@ -103,10 +103,8 @@ Item {
         const escOriginal = escapeBash(originalFile);
         const escThumb = escapeBash(thumbFile);
 
-        const script = "cp \"" + escThumb + "\" " + paths.getCacheDir("wallpaper_picker") + "/current_wallpaper.png || true\n"
-            + "killall swaybg 2>/dev/null\n"
-            + "nohup swaybg -i \"" + escOriginal + "\" -m fill >/dev/null 2>&1 & disown\n"
-            + "(matugen image \"" + escThumb + "\" --prefer darkness 2>/dev/null || true)"
+        const script = "cp \"" + escOriginal + "\" " + paths.getCacheDir("wallpaper_picker") + "/current_wallpaper.png 2>/dev/null\n"
+            + "$HOME/.local/bin/wallset-backend \"" + escOriginal + "\""
 
         Quickshell.execDetached(["bash", "-c", script]);
     }

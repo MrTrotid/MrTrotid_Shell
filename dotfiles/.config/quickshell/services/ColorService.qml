@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 Item {
@@ -43,25 +44,37 @@ Item {
     property color yellow: "#fdd663"
 
     property bool _loaded: false
-    property string _lastJson: ""
 
-    FileView {
-        id: colorFile
-        path: Quickshell.env("HOME") + "/.config/quickshell/mrtrotid-shell/colors.json"
-        onTextChanged: root._parseColors(colorFile.text())
-    }
+    property string _colorFilePath: Quickshell.env("HOME") + "/.config/quickshell/mrtrotid-shell/colors.json"
+    property string _fileBuffer: ""
 
     Timer {
         interval: 2000
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: colorFile.reload()
+        onTriggered: {
+            root._fileBuffer = ""
+            colorReader.running = true
+        }
+    }
+
+    Process {
+        id: colorReader
+        command: ["cat", root._colorFilePath]
+        onRunningChanged: {
+            if (!running && root._fileBuffer.length > 0) {
+                root._parseColors(root._fileBuffer)
+                root._fileBuffer = ""
+            }
+        }
+        stdout: SplitParser {
+            onRead: data => root._fileBuffer += data + "\n"
+        }
     }
 
     function _parseColors(jsonText) {
-        if (jsonText === _lastJson) return
-        _lastJson = jsonText
+        if (!jsonText || jsonText.length < 10) return
         try {
             var colors = JSON.parse(jsonText)
             root.background = Qt.rgba(_hexToR(colors.background), _hexToG(colors.background), _hexToB(colors.background), 1.0)

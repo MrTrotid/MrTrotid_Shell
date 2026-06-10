@@ -57,16 +57,28 @@ The JSON contains these keys (used by ColorService):
 
 ## Step 4: ColorService Polling
 ```javascript
-// FileView watches colors.json
-FileView {
-    path: Quickshell.env("HOME") + "/.config/quickshell/mrtrotid-shell/colors.json"
-    onTextChanged: root._parseColors(colorFile.text())
+// Process + cat reads colors.json every 2s
+// FileView.reload() doesn't detect atomic file rewrites
+Process {
+    id: colorReader
+    command: ["cat", root._colorFilePath]
+    onRunningChanged: {
+        if (!running && root._fileBuffer.length > 0) {
+            root._parseColors(root._fileBuffer)
+            root._fileBuffer = ""
+        }
+    }
+    stdout: SplitParser {
+        onRead: data => root._fileBuffer += data + "\n"
+    }
 }
 
-// Timer reloads every 2s
+// Timer triggers process every 2s
 Timer { interval: 2000; running: true; repeat: true; triggeredOnStart: true
-    onTriggered: colorFile.reload() }
+    onTriggered: { root._fileBuffer = ""; colorReader.running = true } }
 ```
+
+**Important:** Requires `import Quickshell` (not just `Quickshell.Io`) for `Quickshell.env("HOME")`.
 
 ## Step 5: Component Theming
 All components bind to ColorService properties:
@@ -92,8 +104,9 @@ These files are overwritten on every wallpaper change:
 `wallust` generates terminal colors (Kitty, Hyprland) separately from matugen. Runs as part of `wallset-backend`.
 
 ## Modifying the Pipeline
-- Change ColorService file path: Modify `FileView.path`
+- Change ColorService file path: Modify `_colorFilePath` property
 - Change polling interval: Modify Timer interval (default 2000ms)
 - Add new color token: Add to matugen template + ColorService property + _parseColors()
 - Change matugen preferences: Modify `--prefer darkness` in wallpaper apply script
 - Change swaybg mode: Modify `-m fill` in apply script
+- Wallpaper picker calls `$HOME/.local/bin/wallset-backend` (full path required — `execDetached` doesn't inherit PATH)

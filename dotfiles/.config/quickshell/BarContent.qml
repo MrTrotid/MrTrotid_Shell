@@ -615,7 +615,7 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "󰂚"
-                    color: colOnSurface
+                    color: NotificationService.unread > 0 ? colError : colOnSurface
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
 

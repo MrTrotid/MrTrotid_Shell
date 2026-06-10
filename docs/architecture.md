@@ -61,7 +61,7 @@ Registered in `services/qmldir`. All use `pragma Singleton` and `pragma Componen
 | `BatteryService` | UPower battery state, health from sysfs | 3600000ms (health) |
 | `SystemService` | CPU/memory/temp from /proc | 2000ms |
 | `NotificationService` | DBus notification server, toast list, persistence | - |
-| `ColorService` | Material You colors from matugen colors.json | 2000ms |
+| `ColorService` | Material You colors from matugen colors.json (Process + cat) | 2000ms |
 
 ## Popup Mutual Exclusion (ShellState.activePopup)
 Only one popup can be open at a time. `activePopup` is a string property; derived booleans provide backward-compat bindings.
@@ -81,11 +81,10 @@ activePopup: "quickactions" → Quick actions HUD open
 The bar auto-hides when cursor moves away from the top edge (y > 50). A 100ms poll checks `Hyprland.cursor.pos.y`. When cursor is near top (y ≤ 2), bar shows and hide timer stops. When cursor moves away, a 1500ms hide timer starts. `keepBarTemporarily()` keeps bar visible for 5000ms.
 
 ## Theming Pipeline
-1. Wallpaper set via `wallset` or `wallset-backend-startup`
-2. `swaybg` updates wallpaper
-3. `matugen` generates Material You colors → `~/.config/quickshell/mrtrotid-shell/colors.json`
-4. `ColorService` polls colors.json every 2s, updates all color properties
-5. Components bind to `ColorService.*` properties for live theming
+1. Wallpaper set via `wallset` (rofi selector), `Ctrl+Super+T` (Quickshell picker), or `wallset-backend-startup`
+2. `wallset-backend` runs: `swaybg` (wallpaper), `wallust` (terminal colors), `matugen` (Material You colors), `pywal_cava`, lock screen bg copy, swaync restart
+3. `ColorService` reads colors.json via `Process` + `cat` every 2s, updates all color properties
+4. Components bind to `ColorService.*` properties for live theming
 
 ## Keybinds (Global IPC)
 Global shortcuts in `shell.qml` map to `ShellState` toggle functions:

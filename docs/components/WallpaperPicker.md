@@ -1,7 +1,7 @@
 # WallpaperPicker - Coverflow Wallpaper Selector
 
 ## Purpose
-Full-screen wallpaper picker with coverflow carousel, color-based filtering, and live wallpaper application via swaybg + matugen.
+Full-screen wallpaper picker with coverflow carousel, color-based filtering, and live wallpaper application via `wallset-backend` (swaybg + wallust + matugen + pywal_cava + lock screen bg).
 
 ## Architecture
 ```
@@ -70,11 +70,12 @@ Results stored as marker files: `filename_HEX_AABBCC` in `colors_markers/` direc
 
 ## Wallpaper Application
 ```bash
-cp thumb current_wallpaper.png
-killall swaybg
-nohup swaybg -i original_file -m fill &
-matugen image thumb --prefer darkness
+# Copy to cache for startup restore
+cp original_file current_wallpaper.png
+# Apply via wallset-backend (full path required)
+$HOME/.local/bin/wallset-backend original_file
 ```
+`wallset-backend` handles: swaybg, wallust, matugen, pywal_cava, lock screen bg copy, swaync restart.
 
 ## Keyboard Shortcuts
 | Key | Action |

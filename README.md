@@ -96,7 +96,7 @@ Trotid_Shell/
     │   ├── BatteryService.qml    # UPower + sysfs
     │   ├── SystemService.qml     # CPU + memory from /proc
     │   ├── NotificationService.qml # DBus notification server
-    │   ├── ColorService.qml      # matugen colors.json reader (2s polling)
+    │   ├── ColorService.qml      # matugen colors.json reader (Process + cat, 2s polling)
     │   └── qmldir                # Singleton declarations
     ├── widgets/                  # Popup widgets
     │   ├── BluetoothSelector.qml
@@ -180,7 +180,7 @@ Coverflow-style wallpaper selector with thumbnails.
 - FolderListModel loading from cache directory
 - Matrix4x4 skew transforms for coverflow effect
 - Filter bar: All / Landscapes / Nature / Dark / City
-- Apply via swaybg + matugen image for color generation
+- Apply via wallset-backend (swaybg + wallust + matugen + pywal_cava + lock screen bg)
 - `Ctrl + Super + T` to toggle
 </details>
 
@@ -282,7 +282,7 @@ All services live in `quickshell/services/` with `pragma Singleton` + `qmldir` e
 | Service | Description |
 |---------|-------------|
 | ShellState | UI toggle states (activePopup pattern) |
-| ColorService | Reads matugen colors.json with 2s polling, skips parse if unchanged |
+| ColorService | Reads matugen colors.json via `Process` + `cat` (2s polling) — requires `import Quickshell` |
 | AudioService | wpctl status parsing, sink switching, Bluetooth auto-switch, mic source parsing, updates VolumeService |
 | BrightnessService | Brightness polling (200ms) + control |
 | VolumeService | Volume from AudioService (no independent poll), debounced refresh for muted state |
@@ -307,7 +307,7 @@ All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell
 - **Popup click-outside-to-close** via cursor position monitoring
 - **Global IPC** for shell toggles (no QML Shortcut elements)
 - **Single NotificationServer** in NotificationService singleton
-- **ColorService** reads matugen JSON with 2s polling for live theme updates
+- **ColorService** reads matugen JSON via `Process` + `cat` with 2s polling for live theme updates
 - **Wallpaper restore** - shell.qml restores last wallpaper on startup from cached current_wallpaper.png
 - **Hypridle** - Screen dim at 7.5min, lock at 10min, screen off + suspend at 30min
 
@@ -324,8 +324,15 @@ pkill -x qs && quickshell -c ~/Desktop/Trotid_Shell/quickshell/ &
 ```
 
 **Colors not updating:**
-- ColorService polls colors.json every 2 seconds
-- Ensure matugen is installed and colors.json exists
+- ColorService uses `Process` + `cat` to read `colors.json` every 2s (FileView doesn't detect atomic rewrites)
+- Requires `import Quickshell` (not just `Quickshell.Io`) for `Quickshell.env("HOME")`
+- Missing import causes silent `ReferenceError: Quickshell is not defined` — bar shows only hardcoded fallback colors
+- Check logs: `quickshell -c mrtrotid-shell log | grep -i color`
+
+**Wallpaper picker not applying:**
+- Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH
+- wallset-backend runs swaybg, wallust, matugen, pywal_cava, lock screen bg copy, swaync restart
+- If picker freezes, check if `sudo -n true` fails (wallset-backend tries sudo for SDDM copy)
 
 **Check logs:**
 ```bash
