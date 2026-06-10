@@ -33,16 +33,18 @@ Item (root)
 | `currentTime` | string | Timer | Current time "HH:MM " |
 | `mprisPlayer` | var | Mpris | Current MPRIS player |
 | `focusedWorkspaceId` | int | Hyprland | Active workspace ID |
+| `displayTitle` | string | Hyprland | Workspace-aware window title (cleared on empty workspace) |
 
 ## Key Processes / Timers
 | Element | Interval | Purpose |
 |---|---|---|
 | `Timer` | 1000ms | Updates `currentTime` |
+| `Connections` | signal | `onFocusedWorkspaceChanged` / `onActiveToplevelChanged` → calls `updateDisplayTitle()` |
 
 ## Left Section
 - **Nix icon capsule**: `󰣇` Nerd Font icon
 - **Clock capsule**: Shows `currentTime`, click opens calendar popup
-- **Active window capsule**: Shows `Hyprland.activeToplevel?.title`, max 400px, elided
+- **Active window capsule**: Shows `displayTitle` (workspace-aware override of `Hyprland.activeToplevel?.title`), max 400px, elided. Clears on workspace switch when no window is focused.
 
 ## Center Section
 - **Workspaces**: 6 indicators (Repeater model: 6). Active workspace expands to 50px width with primary container color. Click dispatches `workspace N`. Wheel scrolls workspaces.

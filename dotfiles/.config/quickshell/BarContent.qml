@@ -123,7 +123,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
-                text: Hyprland.activeToplevel?.title ?? ""
+                text: root.displayTitle
                 color: colOnSurface
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 14
@@ -131,6 +131,33 @@ Item {
                 width: 400
                 maximumLineCount: 1
             }
+        }
+    }
+
+    property string displayTitle: ""
+
+    function updateDisplayTitle() {
+        var toplevel = Hyprland.activeToplevel
+        if (!toplevel || !toplevel.activated) {
+            root.displayTitle = ""
+            return
+        }
+        var ws = toplevel.workspace
+        var focused = Hyprland.focusedMonitor?.activeWorkspace?.id
+        if (!ws || ws.id !== focused) {
+            root.displayTitle = ""
+            return
+        }
+        root.displayTitle = toplevel.title ?? ""
+    }
+
+    Connections {
+        target: Hyprland
+        function onFocusedWorkspaceChanged() {
+            root.updateDisplayTitle()
+        }
+        function onActiveToplevelChanged() {
+            root.updateDisplayTitle()
         }
     }
 
@@ -615,7 +642,7 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "󰂚"
-                    color: NotificationService.unread > 0 ? colError : colOnSurface
+                    color: colOnSurface
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
 
