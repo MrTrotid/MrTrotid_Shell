@@ -202,7 +202,7 @@ Item {
                         Text {
                             anchors.centerIn: parent
                             text: wsBtn.wsId
-                            color: wsId === root.focusedWorkspaceId ? "#00201d" : colSurfaceContainerHighest
+                            color: wsId === root.focusedWorkspaceId ? colOnPrimary : colSurfaceContainerHighest
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 10
                             font.weight: Font.Bold

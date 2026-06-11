@@ -152,9 +152,9 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: 16
-                color: "#1a1c1e"
+                color: ColorService.surface
                 border.width: notif.urgency === "critical" ? 2 : 1
-                border.color: notif.urgency === "critical" ? Qt.rgba(0.95, 0.30, 0.30, 0.8) : Qt.alpha(ColorService.outlineVariant, 0.3)
+                border.color: notif.urgency === "critical" ? Qt.alpha(ColorService.error, 0.8) : Qt.alpha(ColorService.outlineVariant, 0.3)
 
                 MouseArea {
                     anchors.fill: parent
@@ -240,7 +240,7 @@ Item {
 
                     Text {
                         text: notif.title
-                        color: "#e8ecef"
+                        color: ColorService.surfaceText
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 13
                         font.bold: true
@@ -250,7 +250,7 @@ Item {
 
                     Text {
                         text: notif.body
-                        color: "#8c9198"
+                        color: ColorService.surfaceVariantText
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -271,7 +271,7 @@ Item {
                 anchors.bottomMargin: 8
                 height: 28
                 radius: 10
-                color: "#22252a"
+                color: ColorService.surfaceContainerHigh
 
                 Row {
                     anchors.centerIn: parent

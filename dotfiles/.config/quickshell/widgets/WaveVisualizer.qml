@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import "../services"
 
 Canvas {
     id: root
@@ -8,7 +9,7 @@ Canvas {
     property real maxVisualizerValue: 1000
     property int smoothing: 2
     property bool live: true
-    property color color: "#7c3aed"
+    property color color: ColorService.primary
 
     onPointsChanged: root.requestPaint()
 

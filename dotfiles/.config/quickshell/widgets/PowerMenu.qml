@@ -26,7 +26,7 @@ Item {
     // Full-screen dimmed background
     Rectangle {
         anchors.fill: parent
-        color: Qt.alpha("#000000", 0.6)
+        color: Qt.alpha(ColorService.scrim, 0.6)
 
         MouseArea {
             anchors.fill: parent
@@ -53,9 +53,9 @@ Item {
                         width: 80
                         height: 80
                         radius: 40
-                        color: btn.hovered ? Qt.alpha("#ffffff", 0.15) : Qt.alpha("#ffffff", 0.05)
+                        color: btn.hovered ? ColorService.surfaceContainerHigh : ColorService.surfaceContainer
                         border.width: 2
-                        border.color: btn.hovered ? Qt.alpha("#ffffff", 0.35) : Qt.alpha("#ffffff", 0.12)
+                        border.color: btn.hovered ? Qt.alpha(ColorService.surfaceText, 0.35) : Qt.alpha(ColorService.surfaceText, 0.12)
 
                         Behavior on color { ColorAnimation { duration: 150 } }
                         Behavior on border.color { ColorAnimation { duration: 150 } }
@@ -65,7 +65,7 @@ Item {
                             text: modelData.icon
                             font.family: "JetBrainsMono Nerd Font"
                             font.pixelSize: 28
-                            color: "#ffffff"
+                            color: ColorService.surfaceText
                         }
                     }
 
@@ -77,7 +77,7 @@ Item {
                         text: modelData.label
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 12
-                        color: "#ffffff"
+                        color: ColorService.surfaceText
                         opacity: btn.hovered ? 1.0 : 0.7
 
                         Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -105,7 +105,7 @@ Item {
             text: "Click outside to cancel"
             font.family: "JetBrainsMono Nerd Font"
             font.pixelSize: 12
-            color: Qt.alpha("#ffffff", 0.35)
+            color: Qt.alpha(ColorService.surfaceText, 0.35)
         }
     }
 }

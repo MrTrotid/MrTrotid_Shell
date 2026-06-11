@@ -101,6 +101,31 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **CPU temperature** - SystemService reads coretemp from /sys/class/hwmon, color-coded (green/yellow/red)
 - **Network speed** - NetworkService reads /proc/net/dev wlan0, shows KB/s or MB/s next to WiFi icon
 
+### ColorService Theming Status
+All themeable widgets now use `ColorService` (Material You from matugen). ColorService properties are:
+
+| ColorService property | Maps to `colors.json` key | Usage |
+|----------------------|--------------------------|-------|
+| `surfaceContainerLow` | `surface_container_low` | Deepest background (base) |
+| `surface / surfaceContainer` | `surface` / `surface_container` | Card/panel backgrounds |
+| `surfaceContainerHigh` / `surfaceContainerHighest` | `surface_container_high` / `_highest` | Elevated surfaces |
+| `surfaceText` | `on_surface` | Primary text |
+| `surfaceVariantText` | `on_surface_variant` | Secondary/subtitle text |
+| `primary` | `primary` | Accent color |
+| `primaryText` | `on_primary` | Text on primary backgrounds |
+| `primaryContainer` | `primary_container` | Lighter accent fills |
+| `error` | `error` | Error/red |
+| `errorText` | `on_error` | Text on error backgrounds |
+| `errorContainer` | `error_container` | Error fills |
+| `outline` | `outline` | Borders, muted secondary text |
+| `outlineVariant` | `outline_variant` | Subtle borders/surfaces |
+| `success` / `blue` / `yellow` / `red` | Custom keys | Semantic colors |
+| `scrim` / `shadow` | `scrim` / `shadow` | Overlays, shadows |
+
+**Critical rule**: `_over0` secondary text must map to `ColorService.outline` (#6a7170), NOT `outlineVariant` (#4a4e4d) or `surfaceContainerHigh` (#2b3130). Surface colors are invisible on dark backgrounds — only text-level colors work.
+
+**Battery indicator colors are hardcoded** (not ColorService) — they're functional/universal: `"#7dd3fc"` (charging), `"#4ade80"` (≥60%), `"#facc15"` (≥30%), `"#f87171"` (<30%).
+
 ### Key Decisions
 - Colors bound to ColorService (Material You from matugen)
 - **All keybinds in one file** (`hypr/keybinds.conf`) for cheatsheet generation

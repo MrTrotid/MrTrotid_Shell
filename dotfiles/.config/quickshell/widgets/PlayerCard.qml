@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
+import "../services"
 
 Item {
     id: root
@@ -68,7 +69,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: "#80000000"
+                color: Qt.rgba(0, 0, 0, 0.5)
             }
         }
 
@@ -82,7 +83,7 @@ Item {
                 Layout.preferredHeight: 64
                 Layout.alignment: Qt.AlignVCenter
                 radius: 8
-                color: "#2a2a3e"
+                color: ColorService.surfaceContainer
 
                 Image {
                     anchors.fill: parent
@@ -97,7 +98,7 @@ Item {
                     text: "󰓇"
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 28
-                    color: "#ffffff"
+                    color: ColorService.surfaceText
                     visible: !artDownloaded || artFilePath === ""
                 }
 
@@ -106,14 +107,14 @@ Item {
                     width: 28
                     height: 28
                     radius: 14
-                    color: Qt.rgba(0, 0, 0, 0.5)
+                    color: Qt.alpha(ColorService.scrim, 0.5)
 
                     Text {
                         anchors.centerIn: parent
                         text: root.isPlaying ? "" : ""
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 14
-                        color: "#ffffff"
+                        color: ColorService.surfaceText
                     }
 
                     MouseArea {
@@ -134,7 +135,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.trackTitle
-                    color: "#ffffff"
+                    color: ColorService.surfaceText
                     font.pixelSize: 15
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -144,7 +145,7 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     text: root.trackArtist
-                    color: "#aaaaaa"
+                    color: ColorService.surfaceVariantText
                     font.pixelSize: 12
                     elide: Text.ElideRight
                     maximumLineCount: 1
@@ -160,7 +161,7 @@ Item {
                         text: ""
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 16
-                        color: "#cccccc"
+                        color: ColorService.surfaceText
 
                         MouseArea {
                             anchors.fill: parent
@@ -175,13 +176,13 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 4
                         radius: 2
-                        color: "#3a3a5e"
+                        color: ColorService.surfaceContainerHighest
 
                         Rectangle {
                             width: parent.width * (root.length > 0 ? root.position / root.length : 0)
                             height: parent.height
                             radius: 2
-                            color: "#7c3aed"
+                            color: ColorService.primary
                         }
 
                         MouseArea {
@@ -199,7 +200,7 @@ Item {
                         text: ""
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 16
-                        color: "#cccccc"
+                        color: ColorService.surfaceText
 
                         MouseArea {
                             anchors.fill: parent
