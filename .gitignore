@@ -1,2 +1,27 @@
-# API keys and secrets
+# Generated color files (overwritten on every wallpaper change)
+dotfiles/.config/btop/themes/matugen.theme
+dotfiles/.config/cava/config
+dotfiles/.config/hypr/colors/colors.conf
+dotfiles/.config/kitty/colors/colors.conf
+dotfiles/.config/swaync/colors-swaync.css
+dotfiles/.config/waybar/colors-waybar.css
+dotfiles/.config/waybar/colors.css
+dotfiles/.config/waybar/style.css
+dotfiles/.config/rofi/colors/colors-matugen.rasi
+
+# Wallpapers (too large, changes constantly)
+dotfiles/.config/wallpapers/
+
+# Secrets
 dotfiles/.config/quickshell/calendar/.env
+**/.env
+**/*.env
+
+# Cache and misc
+dotfiles/.config/fastfetch/managed_context/
+dotfiles/.config/fastfetch/test_suite_analysis/
+dotfiles/.config/hypr/managed_context/
+dotfiles/.config/hypr/test_suite_analysis/
+dotfiles/.config/rofi/applets/bin/managed_context/
+dotfiles/.config/rofi/applets/bin/test_suite_analysis/
+dotfiles/.config/hypr/*.bak*

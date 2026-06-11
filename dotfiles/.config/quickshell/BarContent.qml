@@ -557,10 +557,12 @@ Item {
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onPressed: function(mouse) {
                             if (mouse.button === Qt.LeftButton) {
+                                var wasMuted = AudioService.micMuted
                                 AudioService.toggleMicMute()
+                                // toggleMicMute is async (200ms poll), so OSD shows what it's BECOMING
                                 osdContent.triggerMic(
-                                    AudioService.micMuted ? "\uF131" : "\uF130",
-                                    AudioService.micMuted ? "Muted" : "Unmuted"
+                                    wasMuted ? "\uF130" : "\uF131",
+                                    wasMuted ? "Unmuted" : "Muted"
                                 )
                             } else if (mouse.button === Qt.RightButton) {
                                 var name = AudioService.cycleMicSource()

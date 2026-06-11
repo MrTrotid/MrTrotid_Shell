@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+WALLPAPER_DIR="$HOME/.config/wallpapers"
+CACHE="$HOME/.cache/wallpapers_list.txt"
+LAST_FILE="$HOME/.cache/last_wallpaper"
+
+if [ ! -f "$CACHE" ]; then
+  find -L "$WALLPAPER_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) >"$CACHE"
+fi
+
+mapfile -t FILES <"$CACHE"
+[ ${#FILES[@]} -eq 0 ] && exit 1
+
+LAST=""
+[ -f "$LAST_FILE" ] && LAST=$(<"$LAST_FILE")
+
+while :; do
+  FILE="${FILES[RANDOM % ${#FILES[@]}]}"
+  [ "$FILE" != "$LAST" ] && break
+done
+
+echo "$FILE" >"$LAST_FILE"
+
+killall swaybg 2>/dev/null || true
+nohup swaybg -i "$FILE" -m fill >/dev/null 2>&1 &
+disown
+
+wallust run "$FILE"
+matugen image "$FILE" --prefer darkness 2>/dev/null || true
+
+cp "$FILE" ~/.config/background
+swaync-client -rs &
+notify-send "Wallpaper changed to '$(basename "$FILE")'"

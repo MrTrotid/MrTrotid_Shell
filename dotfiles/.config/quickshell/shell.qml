@@ -970,7 +970,7 @@ ShellRoot {
     Process {
         id: wpRestore
         running: false
-        command: ["sh", "-c", "WP=\"$HOME/.cache/quickshell/wallpaper_picker/current_wallpaper.png\"; if [ -f \"$WP\" ]; then killall swaybg 2>/dev/null; nohup swaybg -i \"$WP\" -m fill >/dev/null 2>&1 & disown; (matugen image \"$WP\" --prefer darkness 2>/dev/null || true); fi"]
+        command: ["sh", "-c", "WP=\"$HOME/.cache/quickshell/wallpaper_picker/current_wallpaper.png\"; if [ -f \"$WP\" ]; then pkill -x swaybg 2>/dev/null; nohup swaybg -i \"$WP\" -m fill >/dev/null 2>&1 & disown; (matugen image \"$WP\" --prefer darkness 2>/dev/null || true); fi"]
     }
 
     // Check polkit agent on startup
@@ -988,6 +988,28 @@ ShellRoot {
         id: polkitCheckProc
         running: false
         command: ["sh", "-c", "pgrep -x hyprpolkitagent || (hyprpolkitagent &)"]
+    }
+
+    // Start quickshell-overview if not already running (separate daemon)
+    Timer {
+        id: overviewStartDelay
+        interval: 3000
+        repeat: false
+        running: true
+        onTriggered: {
+            overviewStartProc.running = true;
+        }
+    }
+
+    Process {
+        id: overviewStartProc
+        running: false
+        command: ["sh", "-c", "pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline 2>/dev/null | tr \"\\0\" \" \" | grep -q \"overview\"' 2>/dev/null || qs -c overview"]
+        onRunningChanged: {
+            if (!running && exitCode !== 0 && exitCode !== null) {
+                console.log("Failed to start quickshell-overview (exit:", exitCode, ")");
+            }
+        }
     }
 
     Component.onCompleted: {

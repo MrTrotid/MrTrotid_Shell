@@ -21,7 +21,7 @@
 - Toggle cheatsheet: `Super + /` (keybind reference with executable actions)
 - Toggle power menu: `Super + P` (wlogout overlay — lock/suspend/logout/reboot/power off)
 - Toggle Calendar popup: Click time in bar
-- Cycle workspaces: `Super + Tab` / `Super + Shift + Tab`
+- Toggle workspace overview: `Super + Tab` (quickshell-overview GUI)
 - Lock screen: `Super + Shift + P` (hyprlock)
 - Suspend: `Super + Shift + L`
 - Toggle night light: `Super + Shift + N` (hyprsunset)
@@ -114,6 +114,39 @@ All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.confi
 - **ColorService uses Process+cat** - `FileView.reload()` doesn't detect atomic file rewrites; `Process` + `cat` forces fresh read every 2s
 - **Quickshell.env() requires `import Quickshell`** - Not included in `Quickshell.Io`; missing import causes `ReferenceError: Quickshell is not defined` at runtime
 
+## Workspace Overview (quickshell-overview)
+### Architecture
+- Installed from AUR — system files at `/etc/xdg/quickshell/overview/`
+- **User config override**: Copy all system files to `~/.config/quickshell/overview/` (user path takes priority over system path)
+- IPC: `qs ipc -c overview call overview toggle` (`target: "overview"`, function: `toggle()`/`open()`/`close()`)
+- Keybind: `Super + Tab` → `qs ipc -c overview call overview toggle`
+
+### Navigation
+| Key | Action |
+|-----|--------|
+| `Tab` | Next workspace (right) |
+| `Shift+Tab` | Previous workspace (left) |
+| `←/h` | Left one workspace |
+| `→/l` | Right one workspace |
+| `↑/k` | Up one row |
+| `↓/j` | Down one row |
+| `1-9` | Jump to 1st-9th workspace in group |
+| `0` | Jump to 10th workspace |
+| `Esc/Enter` | Close overview |
+
+### Key Lessons
+- **Config path matters for IPC**: `qs ipc -c overview` resolves the config path using standard search paths. If the running instance was started from `/etc/xdg/` but a user copy exists at `~/.config/quickshell/overview/`, IPC will fail with "No running instances" because it looks for the user-path instance. **Fix**: Kill the old process and restart from the user config path.
+- **Override file**: `Overview.qml` at `~/.config/quickshell/overview/modules/overview/Overview.qml` — add keyboard navigation handlers here. The `Keys.onPressed` handler in the `keyHandler` Item (lines 120-214) manages all keyboard input.
+- **Tab navigation added**: `Qt.Key_Tab` (next column) and `Qt.Key_Backtab` (previous column) — must be added to both the handler AND the `targetId === null` dispatch condition check.
+- **Auto-start in shell.qml**: Uses `Process` with `pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline | tr "\\0" " " | grep -q "overview"' || qs -c overview` to check before starting (3s delay via Timer).
+- **focused workspace indicator**: 2px colored border rectangle in `OverviewWidget.qml` (lines 1185-1205) — updates position via `Behavior on x/y` animations.
+
+### Troubleshooting
+- **"No running instances"**: Running instance was started from a different config path. Kill it and restart from the matching path.
+- **Overview not appearing**: Check if process is running (`pgrep -a qs | grep overview`). If dead, nohup restart: `nohup qs -c overview > /dev/null 2>&1 & disown`.
+- **Duplicate instances**: Shell.qml's auto-start checks for existing process via cmdline matching (`pgrep` + `grep -q "overview"`).
+- **Config changes not picked up**: Quickshell doesn't hot-reload the overview config. Kill and restart the overview process.
+
 ## Scripts
 All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell/scripts/`).
 
@@ -155,8 +188,7 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + V` | Toggle clipboard manager | `quickshell:clipboardToggle` |
 | `Super + .` | Toggle emoji picker | `quickshell:emojiToggle` |
 | `Super + ,` | Toggle GIF picker | `quickshell:gifToggle` |
-| `Super + Tab` | Next workspace | Hyprland dispatch |
-| `Super + Shift + Tab` | Previous workspace | Hyprland dispatch |
+| `Super + Tab` | Toggle workspace overview | `qs ipc -c overview call overview toggle` |
 | `Super + Return` | Terminal (ghostty) | exec |
 | `Super + Space` | App launcher (rofi) | exec |
 | `Super + V` | Clipboard history | exec |
@@ -201,6 +233,22 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - Requires `import Quickshell` (not just `Quickshell.Io`) for `Quickshell.env("HOME")`
 - Missing import causes silent `ReferenceError: Quickshell is not defined` — bar shows only hardcoded fallback colors
 - Check logs: `quickshell -c mrtrotid-shell log | grep -i color`
+
+**Overview not responding to IPC:**
+- Running instance was started from a different config path than the IPC command resolves to
+- Fix: `pkill -f "qs -c overview" && nohup qs -c overview > /dev/null 2>&1 & disown`
+- Check path: `pgrep -a qs | grep overview` shows the running config path
+
+**Ghostty crash after wallpaper change:**
+- Wallset-backend previously had a `kill -USR1` loop for ghostty, which was REMOVED
+- USR1 is redundant — wallust already sends OSC escape sequences for live colors
+- `kill -USR1` caused ghostty to crash via SIGHUP when colliding with escape sequence processing, killing all terminal child processes
+- **Never add kill -USR1 to wallset-backend**
+
+**pkill -x over killall everywhere:**
+- `killall` matches partial process names — `killall swaybg` can accidentally match other processes
+- `killall qs` kills the opencode tool itself
+- Always use `pkill -x <exact_name>` instead of `killall`
 
 **Wallpaper picker not applying:**
 - Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH

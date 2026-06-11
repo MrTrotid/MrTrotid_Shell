@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+WALLPAPER_DIR="$HOME/.config/wallpapers"
+MONITOR="eDP-1"
+HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
+SDDM_WALLPAPER="/usr/share/wallpapers/Next/contents/images/5120x2880.png"
+
+# Pick random image
+FILE=$1
+
+if [ -z "$FILE" ]; then
+  notify-send "No images found in $WALLPAPER_DIR"
+  exit 1
+fi
+
+export PATH="$HOME/anaconda3/bin:/usr/local/bin:/usr/bin:$PATH"
+
+# Set wallpaper and generateasdfsdf theme with Pywal
+
+#hyprctl hyprpaper preload "$FILE"
+#hyprctl hyprpaper wallpaper "$MONITOR","$FILE"
+#hyprctl hyprpaper wallpaper "HDMI-A-1","$FILE"
+
+# Set wallpaper
+pkill -x swaybg 2>/dev/null || true
+sleep 0.3
+nohup swaybg -i "$FILE" -m fill >/dev/null 2>&1 &
+disown
+
+wallust run "$FILE"
+
+# Ghostty picks up live colors from wallust's escape sequences automatically.
+# USR1 reload is redundant and can cause ghostty crashes if it collides with
+# escape sequence processing, killing all terminal child processes.
+# (theme file persists at ~/.cache/wallust/colors-ghostty.conf for next restart)
+
+matugen image "$FILE" --prefer darkness 2>/dev/null || true
+
+pywal_cava 2>/dev/null || true
+
+# copy wallpaper to background for lock screen
+cp "$FILE" ~/.config/background
+
+# Copy to sddm theme (skip if sudo requires password)
+if sudo -n true 2>/dev/null; then
+  if [[ "${FILE##*.}" == "png" ]]; then
+    sudo /usr/bin/cp "$FILE" "$SDDM_WALLPAPER"
+    notify-send "Image has been set to sddm"
+  else
+    sudo magick "$FILE" "$SDDM_WALLPAPER"
+    notify-send "Image has been generated and set to sddm"
+  fi
+fi
+
+# Restart swaync notification daemon
+swaync-client -rs &
+# Update hyprpaper.conf (overwrite safely)
+#cat >"$HYPR_CONF" <<EOF
+# preload = $FILE
+#wallpaper = $MONITOR,$FILE
+# EOF
+
+notify-send "Wallpaper changed to '$(basename "$FILE")'"
