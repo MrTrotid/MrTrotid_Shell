@@ -878,6 +878,84 @@ ShellRoot {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  SETTINGS POPUP (floating centered overlay)
+    // ═══════════════════════════════════════════════════════════════
+    PanelWindow {
+        id: settingsPopup
+        screen: Quickshell.screens[0]
+        visible: ShellState.settingsPopupOpen || settingsLoader.opacity > 0
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        color: "transparent"
+
+        WlrLayershell.layer: (ShellState.settingsPopupOpen || settingsLoader.opacity > 0) ? WlrLayer.Overlay : WlrLayer.Background
+        WlrLayershell.namespace: "custom:settings"
+        WlrLayershell.keyboardFocus: ShellState.settingsPopupOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: 0
+        margins.left: 0
+        implicitWidth: Quickshell.screens[0].width
+        implicitHeight: Quickshell.screens[0].height
+
+        Item {
+            anchors.fill: parent
+            focus: true
+            activeFocusOnTab: true
+            Keys.onEscapePressed: ShellState.closePopup()
+        }
+
+        Loader {
+            id: settingsLoader
+            anchors.fill: parent
+            active: true
+            visible: opacity > 0
+            enabled: ShellState.settingsPopupOpen
+
+            states: [
+                State {
+                    name: "open"
+                    when: ShellState.settingsPopupOpen
+                    PropertyChanges { target: settingsLoader; opacity: 1 }
+                },
+                State {
+                    name: "closed"
+                    when: !ShellState.settingsPopupOpen
+                    PropertyChanges { target: settingsLoader; opacity: 0 }
+                }
+            ]
+
+            transitions: [
+                Transition {
+                    from: "closed"; to: "open"
+                    NumberAnimation { target: settingsLoader; property: "opacity"; duration: 200; easing.type: Easing.OutCubic }
+                },
+                Transition {
+                    from: "open"; to: "closed"
+                    NumberAnimation { target: settingsLoader; property: "opacity"; duration: 150; easing.type: Easing.InCubic }
+                }
+            ]
+
+            sourceComponent: Item {
+                SettingsPopup {
+                    id: settingsInner
+                    anchors.fill: parent
+                }
+
+                Connections {
+                    target: ShellState
+                    function onSettingsPopupOpenChanged() {
+                        if (ShellState.settingsPopupOpen) {
+                            settingsInner.show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  OSD POPUP (volume/brightness feedback)
     // ═══════════════════════════════════════════════════════════════
     PanelWindow {
@@ -964,6 +1042,12 @@ ShellRoot {
         name: "powerMenuToggle"
         description: "Toggle power menu"
         onPressed: ShellState.togglePowerMenu()
+    }
+
+    GlobalShortcut {
+        name: "settingsToggle"
+        description: "Toggle settings panel"
+        onPressed: ShellState.toggleSettings()
     }
 
     // Restore last wallpaper on startup

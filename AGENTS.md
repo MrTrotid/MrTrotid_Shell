@@ -19,6 +19,7 @@
 - Toggle notification panel: `Super + A` (slide-in from right)
 - Toggle quick actions HUD: `Super + J` (slide-up from bottom)
 - Toggle cheatsheet: `Super + /` (keybind reference with executable actions)
+- Toggle settings panel: `Super + I` (floating centered panel with General/About sections)
 - Toggle power menu: `Super + P` (wlogout overlay — lock/suspend/logout/reboot/power off)
 - Toggle Calendar popup: Click time in bar
 - Toggle workspace overview: `Super + Tab` (quickshell-overview GUI)
@@ -274,6 +275,13 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - `killall` matches partial process names — `killall swaybg` can accidentally match other processes
 - `killall qs` kills the opencode tool itself
 - Always use `pkill -x <exact_name>` instead of `killall`
+
+**Camera privacy indicator (NOT YET DONE):**
+- Lenovo LOQ 15IRH8 has a physical e-shutter button on the side of the laptop
+- Camera usage detected via `fuser /dev/video0` (polls every 3s) — shows camera icon (`\uF030`, `colPrimary`, full opacity) when a process has the device open, or camera-off icon (`md-camera_off` at U+F05DF via surrogate pair `\uDB81\uDDDF`, 45% opacity) when idle
+- Bar icon matches WiFi/Bluetooth: uses `colPrimary` with opacity differentiation
+- About section in Settings panel shows Camera: IDLE / IN USE with matching icons
+- **TODO**: The indicator works but needs testing — confirm `fuser` detects camera usage correctly across different apps, consider adding desktop notification on state change, and verify polling doesn't miss rapid toggles
 
 **Wallpaper picker not applying:**
 - Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH

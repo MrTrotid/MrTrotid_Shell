@@ -33,6 +33,22 @@ Item {
     property string currentTime: "00:00"
     property var mprisPlayer: (Mpris.mprisList && Mpris.mprisList.length > 0) ? Mpris.mprisList[0] : null
     readonly property var focusedWorkspaceId: Hyprland.focusedMonitor?.activeWorkspace?.id ?? 1
+    property bool cameraActive: false
+
+    // Poll camera usage status
+    Timer {
+        interval: 3000; running: true; repeat: true
+        onTriggered: camPollProc.running = true
+    }
+
+    Process {
+        id: camPollProc
+        running: false
+        command: ["sh", "-c", "fuser /dev/video0 2>/dev/null && echo ACTIVE || echo IDLE"]
+        stdout: SplitParser {
+            onRead: (data) => { root.cameraActive = data.trim() === "ACTIVE" }
+        }
+    }
 
     // ── Time ──
     Timer {
@@ -574,6 +590,16 @@ Item {
                     }
                 }
 
+                // Camera in-use indicator
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.cameraActive ? "\uF030" : "\uDB81\uDDDF"
+                    color: colPrimary
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 14
+                    opacity: root.cameraActive ? 1.0 : 0.45
+                }
+
                 // Bluetooth
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -658,6 +684,7 @@ Item {
                         }
                     }
                 }
+
             }
         }
     }

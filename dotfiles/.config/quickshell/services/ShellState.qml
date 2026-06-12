@@ -14,7 +14,7 @@ Item {
     property bool mediaCardOpen: false
 
     // ── Active popup (mutual exclusion via string) ──
-    property string activePopup: ""  // "bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | "wallpaper" | "quickactions" | "clipboard" | "emoji" | "gif" | "power" | ""
+    property string activePopup: ""  // "bluetooth" | "wifi" | "calendar" | "notification" | "cheatsheet" | "wallpaper" | "quickactions" | "clipboard" | "emoji" | "gif" | "power" | "settings" | ""
 
     // Derived booleans — backward-compat with existing bindings
     readonly property bool bluetoothPanelOpen: activePopup === "bluetooth"
@@ -28,6 +28,7 @@ Item {
     readonly property bool emojiPopupOpen: activePopup === "emoji"
     readonly property bool gifPopupOpen: activePopup === "gif"
     readonly property bool powerMenuOpen: activePopup === "power"
+    readonly property bool settingsPopupOpen: activePopup === "settings"
     readonly property bool anyPopupOpen: activePopup !== ""
 
     // ── Toggle functions ──
@@ -63,6 +64,7 @@ Item {
     function toggleEmojiPopup() { togglePopup("emoji") }
     function toggleGifPopup() { togglePopup("gif") }
     function togglePowerMenu() { togglePopup("power") }
+    function toggleSettings() { togglePopup("settings") }
 
     function keepBarTemporarily() {
         keepBarVisible = true
