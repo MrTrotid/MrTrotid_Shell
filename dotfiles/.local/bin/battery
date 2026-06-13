@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+current=$(powerprofilesctl get)
+
+chosen=$(echo -e "  Performance\n  Balanced\n  Power Saver" | rofi -dmenu -p "$current" -theme ~/.config/rofi/applets/type-3/battery.rasi)
+
+case "$chosen" in
+    *Performance) powerprofilesctl set performance && notify-send "Power Profile" "Performance" ;;
+    *Balanced)    powerprofilesctl set balanced    && notify-send "Power Profile" "Balanced" ;;
+    *Power*)      powerprofilesctl set power-saver && notify-send "Power Profile" "Power Saver" ;;
+esac

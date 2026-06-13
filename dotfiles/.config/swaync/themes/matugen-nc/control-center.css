@@ -1,0 +1,96 @@
+@define-color text            @on_surface;
+@define-color background-alt  @surface_container;
+@define-color selected        @primary;
+@define-color hover           alpha(@primary_container, 0.45);
+@define-color urgent          @error;
+
+* {
+  color: @text;
+  all: unset;
+  font-size: 14px;
+  font-family: "JetBrainsMono Nerd Font";
+  font-weight: 500;
+  transition: 150ms ease;
+}
+
+.blank-window {
+  background: transparent;
+}
+
+.control-center {
+  background: @surface_container_high;
+  border-radius: 16px;
+  border: 1px solid alpha(@primary, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  margin: 8px;
+  padding: 12px;
+}
+
+.control-center .notification-row .notification-background,
+.control-center .notification-row .notification-background .notification.critical {
+  background: @surface_container;
+  border-radius: 12px;
+  margin: 4px 0;
+  padding: 4px;
+}
+
+.control-center .notification-row .notification-background .notification.critical {
+  color: @urgent;
+  border: 1px solid @urgent;
+}
+
+.control-center .notification-row .notification-background .notification .notification-content {
+  margin: 4px;
+  padding: 6px 4px 2px 2px;
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * .notification-action {
+  background: alpha(@selected, 0.3);
+  border-radius: 8px;
+  margin: 4px;
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * .notification-action:hover {
+  background: @hover;
+}
+
+.control-center .notification-row .notification-background .close-button {
+  background: transparent;
+  border-radius: 6px;
+  margin: 0;
+  padding: 2px 6px;
+}
+
+.control-center .notification-row .notification-background .close-button:hover {
+  background: @hover;
+}
+
+.notification-group {
+  margin: 2px 8px;
+}
+
+.notification-group-headers {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
+.notification-group-collapse-button,
+.notification-group-close-all-button {
+  background: transparent;
+  margin: 4px;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.notification-group-collapse-button:hover,
+.notification-group-close-all-button:hover {
+  background: @hover;
+}
+
+.widget-label {
+  color: @selected;
+  font-size: 1.1rem;
+  padding: 12px 8px 4px;
+  font-weight: 700;
+}

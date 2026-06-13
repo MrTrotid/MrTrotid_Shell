@@ -3,22 +3,21 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
-import "../services"
 
 Item {
     id: root
 
-    readonly property color _base:    ColorService.surfaceContainerLow
-    readonly property color _crust:   ColorService.surfaceContainer
-    readonly property color _surf1:   ColorService.surfaceContainerHigh
-    readonly property color _surf2:   ColorService.surfaceContainerHighest
-    readonly property color _text:    ColorService.surfaceText
-    readonly property color _sub:     ColorService.surfaceVariantText
-    readonly property color _over0:   ColorService.outline
-    readonly property color _accent:  ColorService.primary
-    readonly property color _red:     ColorService.error
-    readonly property color _green:   ColorService.success
-    readonly property color accentLight: Qt.lighter(ColorService.primary, 1.15)
+    readonly property color _base:    "#131514"
+    readonly property color _crust:   "#1c1e1d"
+    readonly property color _surf1:   "#232524"
+    readonly property color _surf2:   "#2b2d2c"
+    readonly property color _text:    "#c5cbc9"
+    readonly property color _sub:     "#757d7b"
+    readonly property color _over0:   "#353937"
+    readonly property color _accent:  "#81d5ca"
+    readonly property color _red:     "#ffb4ab"
+    readonly property color _green:   "#92d5ab"
+    readonly property color accentLight: Qt.lighter(_accent, 1.15)
 
     property bool btEnabled: false
     property var connectedDevices: []
@@ -333,7 +332,7 @@ Item {
         anchors.fill: parent
         radius: 16
         color: _base
-        border.color: _over0
+        border.color: "#303635"
         border.width: 1
         clip: true
 
@@ -396,7 +395,7 @@ Item {
                 MultiEffect {
                     source: centralCore
                     anchors.fill: centralCore
-                    shadowEnabled: true; shadowColor: ColorService.shadow
+                    shadowEnabled: true; shadowColor: "#000000"
                     shadowOpacity: root.isPowered ? 0.5 : 0.0
                     shadowBlur: 1.2; shadowVerticalOffset: 6; z: -1
                     Behavior on shadowOpacity { NumberAnimation { duration: 600 } }
@@ -444,7 +443,7 @@ Item {
                     Behavior on border.color { ColorAnimation { duration: 300 } }
 
                     Rectangle {
-                        anchors.fill: parent; radius: parent.radius; color: ColorService.surfaceText
+                        anchors.fill: parent; radius: parent.radius; color: "#ffffff"
                         opacity: centralCore.flashOpacity
                         PropertyAnimation on opacity { id: coreFlashAnim; to: 0; duration: 500; easing.type: Easing.OutExpo }
                     }
@@ -526,7 +525,7 @@ Item {
                             Layout.alignment: Qt.AlignHCenter; Layout.maximumWidth: 120
                             visible: root.viewMode !== "home"
                             font.family: "JetBrainsMono Nerd Font"; font.weight: Font.Bold; font.pixelSize: 10
-                            color: (root.viewMode === "scanning" || root.viewMode === "detail") ? Qt.alpha(ColorService.surfaceText, 0.7) : (root.hasConn ? Qt.alpha(ColorService.surfaceText, 0.7) : _over0)
+                            color: (root.viewMode === "scanning" || root.viewMode === "detail") ? Qt.rgba(0, 0, 0, 0.5) : (root.hasConn ? Qt.rgba(0, 0, 0, 0.5) : _over0)
                             wrapMode: Text.WordWrap; maximumLineCount: 1; horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
                             text: {
@@ -679,7 +678,7 @@ Item {
 
                     MultiEffect {
                         source: floatCard; anchors.fill: floatCard
-                        shadowEnabled: true; shadowColor: ColorService.shadow; shadowOpacity: 0.3; shadowBlur: 0.8; shadowVerticalOffset: 4; z: -1
+                        shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.3; shadowBlur: 0.8; shadowVerticalOffset: 4; z: -1
                     }
 
                     Rectangle {
@@ -695,7 +694,7 @@ Item {
                         }
 
                         Rectangle {
-                            anchors.fill: parent; radius: 14; color: ColorService.surfaceText
+                            anchors.fill: parent; radius: 14; color: "#ffffff"
                             opacity: cardOrbit.flashOpacity; z: 5
                             PropertyAnimation on opacity { id: cardFlashAnim; to: 0; duration: 500; easing.type: Easing.OutExpo }
                         }
@@ -717,7 +716,7 @@ Item {
                                 }
                                 Text {
                                     font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 9
-                                    color: (modelData.type === "disconnect" || modelData.type === "forget") ? ColorService.errorText : (cardOrbit.isConn ? _green : _over0)
+                                    color: (modelData.type === "disconnect" || modelData.type === "forget") ? Qt.rgba(0, 0, 0, 0.6) : (cardOrbit.isConn ? _green : _over0)
                                     text: modelData.subtitle
                                 }
                             }

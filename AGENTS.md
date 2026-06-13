@@ -10,6 +10,51 @@
   - `~/.cache/wallust/colors-kitty.conf`
   - `~/.config/wlogout/style.css` (generated from matugen template)
 
+## Setup Instructions
+
+### Fresh Install
+```bash
+# Clone the repo
+git clone https://github.com/Noro18/linux-ricing-dotfiles ~/Desktop/MrTrotid_Shell
+cd ~/Desktop/MrTrotid_Shell
+
+# Run the installer (Arch-based systems)
+chmod +x install.sh && ./install.sh
+```
+
+This will:
+- Install all required packages (Hyprland, Quickshell, wallust, matugen, etc.)
+- Backup existing configs to `~/.config.bak-<timestamp>/`
+- Symlink quickshell config for live development updates
+- Copy hypr, rofi, kitty, wallpapers, and other configs
+- Copy bin scripts (wallset-backend, etc.) to `~/.local/bin/`
+- Symlink wlogout and scripts directories
+- Install JetBrains Nerd Font
+- Set up quickshell-overview user config
+- Add Quickshell auto-start to hyprland.conf
+
+### Post-Install
+```bash
+# Log out and back in to Hyprland, then:
+wallset                    # Set initial wallpaper (triggers theming pipeline)
+Super + /                  # Open keybind cheatsheet
+Super + I                  # Open settings panel
+```
+
+### Dev Workflow (after install)
+```bash
+./reload.sh                # Reload Quickshell after QML edits
+./start-trotid.sh          # Launch Hyprland with this config (for testing)
+```
+
+### Update Shell (from Settings panel)
+1. Open Settings with `Super + I`
+2. Go to the **About** tab
+3. The **Update Shell** section auto-detects the repo path
+4. Click **Check Updates** to fetch and show commits behind
+5. Click **Update Now** to pull latest changes
+6. Click **Restart Shell** to apply
+
 ## Essential Commands
 - Change wallpaper: `wallset` (opens selector) or `Super + W`
 - Random wallpaper on login: `wallset-backend-startup`
@@ -276,12 +321,11 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - `killall qs` kills the opencode tool itself
 - Always use `pkill -x <exact_name>` instead of `killall`
 
-**Camera privacy indicator (NOT YET DONE):**
-- Lenovo LOQ 15IRH8 has a physical e-shutter button on the side of the laptop
+**Camera privacy indicator:**
 - Camera usage detected via `fuser /dev/video0` (polls every 3s) — shows camera icon (`\uF030`, `colPrimary`, full opacity) when a process has the device open, or camera-off icon (`md-camera_off` at U+F05DF via surrogate pair `\uDB81\uDDDF`, 45% opacity) when idle
 - Bar icon matches WiFi/Bluetooth: uses `colPrimary` with opacity differentiation
 - About section in Settings panel shows Camera: IDLE / IN USE with matching icons
-- **TODO**: The indicator works but needs testing — confirm `fuser` detects camera usage correctly across different apps, consider adding desktop notification on state change, and verify polling doesn't miss rapid toggles
+- Simple ON/OFF status — does not track which app is using the camera
 
 **Wallpaper picker not applying:**
 - Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH

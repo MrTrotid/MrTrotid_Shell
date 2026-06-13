@@ -2,6 +2,23 @@
 
 A custom Hyprland + Quickshell desktop shell with singleton service architecture, global IPC keybinds, Material You theming, and unified keybinds.conf for cheatsheet generation.
 
+## Quick Start
+
+```bash
+# Clone and install (Arch-based systems)
+git clone https://github.com/Noro18/linux-ricing-dotfiles ~/Desktop/MrTrotid_Shell
+cd ~/Desktop/MrTrotid_Shell
+chmod +x install.sh && ./install.sh
+
+# After logging into Hyprland:
+wallset                    # Set wallpaper (triggers theming)
+Super + /                  # View keybind cheatsheet
+```
+
+**Pre-requisites:** Arch-based Linux with Hyprland already installed, or let the installer handle it.
+
+**See [AGENTS.md](AGENTS.md) for detailed setup, dev workflow, and troubleshooting.**
+
 ## What's Included
 
 - **Hyprland 0.55+** with scrolling layout, gestures, layerrules
@@ -16,6 +33,8 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 - **Emoji picker** - native Quickshell widget with 5 categories, search, click to copy
 - **GIF selector** - native Quickshell widget with Tenor API search, AnimatedImage preview (plays on hover), click to copy URL
 - **Night light toggle** via hyprsunset
+- **Settings panel** - floating centered panel with General/About sections, system info (OS, kernel, GPU), camera status indicator
+- **Camera privacy indicator** - polls `/dev/video0` via `fuser` every 3s, shows camera icon when in use / camera-off when idle
 - **Power menu** - wlogout with HyprNova-style icon buttons (lock/suspend/logout/reboot/power off)
 - **CPU temperature chip** - color-coded (green/yellow/red) in bar
 - **Network speed indicator** - ↓/↑ KB/s or MB/s next to WiFi icon
@@ -34,6 +53,7 @@ A custom Hyprland + Quickshell desktop shell with singleton service architecture
 | `Super + O` | Toggle bar |
 | `Super + M` | Toggle media card |
 | `Ctrl + Super + T` | Toggle wallpaper picker |
+| `Super + I` | Toggle settings panel |
 | `Super + V` | Toggle clipboard manager |
 | `Super + .` | Toggle emoji picker |
 | `Super + ,` | Toggle GIF picker |
@@ -140,6 +160,7 @@ Top bar with exclusiveZone: 34, auto-hides when cursor moves away.
 - Battery: hardcoded green/yellow/red colors, sky blue when charging, text uses colOnPrimary
 - Window title: capped at 416px max width
 - WiFi icon: solid colPrimary color matching Bluetooth
+- Camera indicator: polls `fuser /dev/video0` every 3s, camera icon when active, md-camera_off when idle
 
 **Colors:** Bound to ColorService (Material You from matugen)
 </details>
@@ -274,6 +295,20 @@ Native GIF search powered by Tenor API.
 - Loading spinner and error fallback
 - Dynamic grid sizing (adapts to container width)
 - `Super + ,` to toggle
+</details>
+
+<details>
+<summary><strong>Settings Panel</strong></summary>
+
+Floating centered settings overlay with tab-based navigation.
+
+**Features:**
+- General tab: bar visibility toggle, animations toggle, notifications toggle (template stubs)
+- About tab: shell identity + 2-column system info grid (OS, kernel, uptime, CPU, GPU, memory, DE, WM, shell theme)
+- Camera status: shows IDLE or IN USE with matching Nerd Font icons
+- System info read via Process + SplitParser on first show (not polling)
+- Powered by matugen Material You theming (ColorService)
+- `Super + I` to toggle
 </details>
 
 ## Services

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Rofi-based WiFi network manager
+
+nmcli --fields SSID,SIGNAL,SECURITY device wifi list --rescan yes 2>/dev/null | \
+    awk 'NR>1 && $1 != "--" && $1 != "" {
+        gsub(/^[[:space:]]*/, "", $0)
+        ssid = $1
+        signal = $2
+        sec = $3
+        bars = int(signal/25) + 1
+        if (bars > 5) bars = 5
+        icon = "󰤯"
+        if (bars >= 2) icon = "󰤟"
+        if (bars >= 3) icon = "󰤢"
+        if (bars >= 4) icon = "󰤥"
+        if (bars >= 5) icon = "󰤨"
+        lock = (sec != "") ? " " : "   "
+        print icon lock " " ssid
+    }' | sort -u > /tmp/wifi-list
+
+SELECTED=$(rofi -dmenu -p "" -theme ~/.config/rofi/launchers/type-1/style-1.rasi < /tmp/wifi-list)
+
+if [ -n "$SELECTED" ]; then
+    SSID=$(echo "$SELECTED" | sed 's/^[^ ]*  *//')
+    HASSECURITY=$(echo "$SELECTED" | grep -q "" && echo 1 || echo 0)
+    CONNECTED=$(nmcli -t -f NAME con show --active 2>/dev/null | grep -cx "$SSID")
+    if [ "$CONNECTED" -gt 0 ]; then
+        nmcli connection down "$SSID" 2>/dev/null || nmcli device disconnect wlan0
+    else
+        if [ "$HASSECURITY" -eq 1 ]; then
+            PASSWORD=$(rofi -dmenu -password -p "" -mesg "$SSID" -theme ~/.config/rofi/launchers/type-1/style-1.rasi)
+            [ -n "$PASSWORD" ] && nmcli device wifi connect "$SSID" password "$PASSWORD"
+        else
+            nmcli device wifi connect "$SSID"
+        fi
+    fi
+fi

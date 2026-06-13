@@ -1,0 +1,19 @@
+
+#!/usr/bin/env bash
+
+ROFI_THEME="$HOME/.config/rofi/launchers/type-1/style-1.rasi"
+WAYBAR_DIR="$HOME/.config/waybar/custom styles"
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+CWD="$(pwd)"
+
+IFS=$'\n'
+cd "$WAYBAR_DIR" || exit
+
+chosen=$(for a in *.css ; do echo -en "$a\0icon\x1f$a\n" ; done | rofi -dmenu -p "Select Waybar Styles" -theme "${ROFI_THEME}")
+
+if [ -n "$chosen" ]; then
+    # call waybar-set.sh with the chosen filename (including extension)
+    waybar-set "$WAYBAR_DIR/$chosen"
+fi
+
+cd "$CWD" || exit

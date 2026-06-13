@@ -1,0 +1,98 @@
+@define-color text            @on_surface;
+@define-color background-alt  @surface_container;
+@define-color selected        @primary;
+@define-color hover           alpha(@primary, 0.25);
+@define-color urgent          @error;
+
+* {
+  color: @text;
+  all: unset;
+  font-size: 14px;
+  font-family: "JetBrainsMono Nerd Font";
+  transition: 150ms ease;
+}
+
+.notification-row {
+  outline: none;
+  margin: 0;
+  padding: 0;
+}
+
+.floating-notifications.background .notification-row .notification-background {
+  background: @surface_container_high;
+  border: 1px solid alpha(@primary, 0.15);
+  border-radius: 16px;
+  margin: 8px 12px;
+  padding: 0;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification {
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification.critical {
+  border: 1px solid @urgent;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification .notification-content {
+  margin: 8px 12px;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification > *:last-child > * {
+  min-height: 3em;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification > *:last-child > * .notification-action {
+  border-radius: 8px;
+  background: @background-alt;
+  margin: 4px;
+  border: none;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification > *:last-child > * .notification-action:hover {
+  background: @hover;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification > *:last-child > * .notification-action:active {
+  background: @selected;
+  color: @surface;
+}
+
+.image {
+  margin: 6px 16px 6px 0;
+  border-radius: 8px;
+}
+
+.summary {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.body {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button {
+  margin: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button:hover {
+  background: @hover;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button:active {
+  background: @selected;
+  color: @surface;
+}
+
+.notification.critical progress,
+.notification.low progress,
+.notification.normal progress {
+  background: @selected;
+}

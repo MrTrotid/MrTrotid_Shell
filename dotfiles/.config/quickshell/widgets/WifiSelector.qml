@@ -4,25 +4,24 @@ import QtQuick.Controls
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
-import "../services"
 
 Item {
     id: root
 
-    readonly property color _base:    ColorService.surfaceContainerLow
-    readonly property color _mantle:  ColorService.surfaceContainer
-    readonly property color _crust:   ColorService.surfaceContainer
-    readonly property color _surf0:   ColorService.surfaceContainer
-    readonly property color _surf1:   ColorService.surfaceContainerHigh
-    readonly property color _surf2:   ColorService.surfaceContainerHighest
-    readonly property color _text:    ColorService.surfaceText
-    readonly property color _sub:     ColorService.surfaceVariantText
-    readonly property color _over0:   ColorService.outline
-    readonly property color _accent:  ColorService.primary
-    readonly property color _red:     ColorService.error
-    readonly property color _green:   ColorService.success
+    readonly property color _base:    "#131514"
+    readonly property color _mantle:  "#0f1110"
+    readonly property color _crust:   "#1c1e1d"
+    readonly property color _surf0:   "#1c1e1d"
+    readonly property color _surf1:   "#232524"
+    readonly property color _surf2:   "#2b2d2c"
+    readonly property color _text:    "#c5cbc9"
+    readonly property color _sub:     "#757d7b"
+    readonly property color _over0:   "#353937"
+    readonly property color _accent:  "#81d5ca"
+    readonly property color _red:     "#ffb4ab"
+    readonly property color _green:   "#92d5ab"
 
-    readonly property color accentLight: Qt.lighter(ColorService.primary, 1.15)
+    readonly property color accentLight: Qt.lighter(_accent, 1.15)
 
     property bool wifiEnabled: false
     property bool wifiPresent: true
@@ -290,7 +289,7 @@ Item {
                     source: centralCore
                     anchors.fill: centralCore
                     shadowEnabled: true
-                    shadowColor: ColorService.shadow
+                    shadowColor: "#000000"
                     shadowOpacity: root.isPowered ? 0.5 : 0.0
                     shadowBlur: 1.2
                     shadowVerticalOffset: 6
@@ -349,7 +348,7 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent; radius: parent.radius
-                        color: ColorService.surfaceText; opacity: centralCore.flashOpacity
+                        color: "#ffffff"; opacity: centralCore.flashOpacity
                         PropertyAnimation on opacity { id: coreFlashAnim; to: 0; duration: 500; easing.type: Easing.OutExpo }
                     }
 
@@ -454,8 +453,8 @@ Item {
                             visible: root.viewMode !== "home"
                             font.family: "JetBrainsMono Nerd Font"; font.weight: Font.Bold; font.pixelSize: 10
                             color: {
-                                if (root.viewMode === "scanning") return Qt.alpha(ColorService.surfaceText, 0.7);
-                                if (root.viewMode === "detail") return Qt.alpha(ColorService.surfaceText, 0.7);
+                                if (root.viewMode === "scanning") return Qt.rgba(0, 0, 0, 0.5);
+                                if (root.viewMode === "detail") return Qt.rgba(0, 0, 0, 0.5);
                                 return _over0
                             }
                             wrapMode: Text.WordWrap; maximumLineCount: 1; horizontalAlignment: Text.AlignHCenter
@@ -498,7 +497,7 @@ Item {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             font.family: "JetBrainsMono Nerd Font"; font.weight: Font.Bold; font.pixelSize: 10
-                            color: _over0
+                            color: root.hasConn ? Qt.rgba(0, 0, 0, 0.5) : _over0
                             text: root.hasConn ? "Hold to disconnect" : ""
                         }
                     }
@@ -719,7 +718,7 @@ Item {
                         source: floatCard
                         anchors.fill: floatCard
                         shadowEnabled: true
-                        shadowColor: ColorService.shadow
+                        shadowColor: "#000000"
                         shadowOpacity: 0.3
                         shadowBlur: 0.8
                         shadowVerticalOffset: 4
@@ -762,7 +761,7 @@ Item {
                         }
 
                         Rectangle {
-                            anchors.fill: parent; radius: 14; color: ColorService.surfaceText
+                            anchors.fill: parent; radius: 14; color: "#ffffff"
                             opacity: cardOrbit.flashOpacity; z: 5
                             PropertyAnimation on opacity { id: cardFlashAnim; to: 0; duration: 500; easing.type: Easing.OutExpo }
                         }
@@ -839,7 +838,7 @@ Item {
                                 }
                                 Text {
                                     font.family: "JetBrainsMono Nerd Font"; font.pixelSize: 9
-                                    color: (modelData.type === "disconnect" || modelData.type === "forget") ? ColorService.errorText : (cardOrbit.isFailed ? _red : (cardOrbit.isActive ? _green : _over0))
+                                    color: (modelData.type === "disconnect" || modelData.type === "forget") ? Qt.rgba(0, 0, 0, 0.6) : (cardOrbit.isFailed ? _red : (cardOrbit.isActive ? _green : _over0))
                                     text: {
                                         if (modelData.type === "disconnect") return "Tap to disconnect"
                                         if (modelData.type === "forget") return "Remove saved profile"

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+chosen=$(echo -e "Normal\nFocus\nZen" | rofi -dmenu -p "Select Mode" -theme ~/.config/rofi/launchers/type-1/style-1.rasi) 
+
+if [ -n "$chosen" ]; then 
+  focus-mode $chosen
+fi
+
+notify-send "Entered $chosen mode"
+

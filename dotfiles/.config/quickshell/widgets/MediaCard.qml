@@ -3,7 +3,6 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
-import "../services"
 
 Item {
     id: root
@@ -46,7 +45,7 @@ Item {
             WaveVisualizer {
                 anchors.fill: parent
                 points: root.visualizerPoints
-                color: ColorService.primary
+                color: "#7c3aed"
             }
         }
     }

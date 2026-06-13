@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Rofi-based Bluetooth manager
+
+TOGGLE="  Toggle Bluetooth"
+SCAN="  Scan for devices"
+SEP="--------------------"
+
+MENU="$TOGGLE\n$SCAN\n$SEP"
+
+if bluetoothctl show | grep -q "Powered: yes"; then
+    TOGGLE="  Disable Bluetooth"
+    MENU="$TOGGLE\n$SCAN\n$SEP"
+
+    DEVICES=$(bluetoothctl devices | while read -r line; do
+        MAC=$(echo "$line" | awk '{print $2}')
+        NAME=$(echo "$line" | cut -d' ' -f3-)
+        INFO=$(bluetoothctl info "$MAC" 2>/dev/null)
+        if echo "$INFO" | grep -q "Connected: yes"; then
+            echo "  $NAME ($MAC)"
+        else
+            echo "  $NAME ($MAC)"
+        fi
+    done)
+
+    if [ -n "$DEVICES" ]; then
+        MENU="$MENU\n$DEVICES"
+    fi
+fi
+
+CHOICE=$(echo -e "$MENU" | rofi -dmenu -p "" -theme ~/.config/rofi/launchers/type-1/style-1.rasi)
+
+case "$CHOICE" in
+    *"Disable Bluetooth"*)
+        bluetoothctl power off
+        notify-send "Bluetooth" "Disabled"
+        ;;
+    *"Enable Bluetooth"*|*"Toggle Bluetooth"*)
+        bluetoothctl power on
+        notify-send "Bluetooth" "Enabled"
+        ;;
+    *"Scan for devices"*)
+        bluetoothctl scan on &
+        SCAN_PID=$!
+        notify-send "Bluetooth" "Scanning for devices..."
+        sleep 5
+        kill $SCAN_PID 2>/dev/null
+        bluetoothctl scan off
+        "$0"
+        ;;
+    *""*|*""*)
+        MAC=$(echo "$CHOICE" | sed 's/.*(\([0-9A-Fa-f:]*\)).*/\1/')
+        if echo "$CHOICE" | grep -q ""; then
+            bluetoothctl disconnect "$MAC"
+        else
+            bluetoothctl connect "$MAC"
+        fi
+        sleep 1
+        "$0"
+        ;;
+esac

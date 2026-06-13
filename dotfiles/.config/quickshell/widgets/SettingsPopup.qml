@@ -31,11 +31,76 @@ Item {
     property string shellVersion: ""
     property string cameraInfo: ""
 
+    property string repoPath: ""
+    property string branch: ""
+    property string commit: ""
+    property string behindInfo: ""
+    property string dateInfo: ""
+    property bool updateChecking: false
+    property bool updateResultVisible: false
+    property string updateResult: ""
+
     property bool animationsEnabled: true
     property bool notificationsEnabled: true
 
     function close() { ShellState.closePopup() }
-    function show() { if (osInfo === "") sysInfoProc.running = true }
+    function show() {
+        if (osInfo === "") sysInfoProc.running = true
+        if (repoPath === "") detectRepoProc.running = true
+    }
+
+    function checkUpdates() {
+        if (repoPath === "") return
+        updateChecking = true
+        updateResultVisible = false
+        var repo = root.repoPath
+        updateProc.command = ["sh", "-c",
+            "cd \"" + repo + "\" 2>/dev/null && " +
+            "git fetch origin 2>&1 && " +
+            "BEHIND=$(git rev-list --count HEAD..@{upstream} 2>/dev/null || echo 0) && " +
+            "echo \"BEHIND=$BEHIND\" && " +
+            "echo \"DATE=$(git log -1 --format=%cs 2>/dev/null)\" && " +
+            "if [ \"$BEHIND\" = \"0\" ]; then echo 'RESULT=Up to date'; else echo \"RESULT=$BEHIND commits behind\"; fi"
+        ]
+        updateProc.running = true
+    }
+
+    function updateNow() {
+        if (repoPath === "") return
+        updateChecking = true
+        updateResultVisible = false
+        var repo = root.repoPath
+        updateProc.command = ["sh", "-c",
+            "cd \"" + repo + "\" 2>/dev/null && " +
+            "OUT=$(git pull 2>&1) && " +
+            "echo \"BRANCH=$(git branch --show-current 2>/dev/null)\" && " +
+            "echo \"COMMIT=$(git rev-parse --short HEAD 2>/dev/null)\" && " +
+            "echo \"DATE=$(git log -1 --format=%cs 2>/dev/null)\" && " +
+            "if echo \"$OUT\" | grep -q 'Already up to date'; then echo 'RESULT=Already up to date'; else echo 'RESULT=Updated. Restart shell to apply.'; fi"
+        ]
+        updateProc.running = true
+    }
+
+    Process {
+        id: updateProc
+        running: false
+        command: []  // set dynamically
+
+        stdout: SplitParser {
+            onRead: (data) => {
+                var line = data.trim()
+                if (line.startsWith("BEHIND=")) root.behindInfo = line.substring(7)
+                else if (line.startsWith("DATE=")) root.dateInfo = line.substring(5)
+                else if (line.startsWith("BRANCH=")) root.branch = line.substring(7)
+                else if (line.startsWith("COMMIT=")) root.commit = line.substring(7)
+                else if (line.startsWith("RESULT=")) {
+                    root.updateResult = line.substring(7)
+                    root.updateResultVisible = true
+                    root.updateChecking = false
+                }
+            }
+        }
+    }
 
     Process {
         id: sysInfoProc
@@ -58,6 +123,41 @@ Item {
         }
     }
 
+    Process {
+        id: detectRepoProc
+        running: false
+        command: ["sh", "-c",
+            "CONFIG=$(readlink -f ~/.config/quickshell/mrtrotid-shell 2>/dev/null || readlink -f ~/.config/quickshell/custom 2>/dev/null); " +
+            "if [ -z \"$CONFIG\" ]; then echo 'FOUND=false'; exit; fi; " +
+            "DIR=\"$CONFIG\"; " +
+            "while [ \"$DIR\" != \"/\" ]; do " +
+            "  if [ -d \"$DIR/.git\" ]; then " +
+            "    echo \"FOUND=true\"; " +
+            "    echo \"REPO_PATH=$DIR\"; " +
+            "    cd \"$DIR\"; " +
+            "    echo \"BRANCH=$(git branch --show-current 2>/dev/null)\"; " +
+            "    echo \"COMMIT=$(git rev-parse --short HEAD 2>/dev/null)\"; " +
+            "    echo \"BEHIND=$(git rev-list --count HEAD..@{upstream} 2>/dev/null || echo 0)\"; " +
+            "    echo \"DATE=$(git log -1 --format=%cs 2>/dev/null)\"; " +
+            "    exit; " +
+            "  fi; " +
+            "  DIR=$(dirname \"$DIR\"); " +
+            "done; " +
+            "echo 'FOUND=false'"
+        ]
+
+        stdout: SplitParser {
+            onRead: (data) => {
+                var line = data.trim()
+                if (line.startsWith("REPO_PATH=")) root.repoPath = line.substring(10)
+                else if (line.startsWith("BRANCH="))   root.branch = line.substring(7)
+                else if (line.startsWith("COMMIT="))   root.commit = line.substring(7)
+                else if (line.startsWith("BEHIND="))   root.behindInfo = line.substring(7)
+                else if (line.startsWith("DATE="))     root.dateInfo = line.substring(5)
+            }
+        }
+    }
+
     // ── Scrim ──
     Rectangle {
         anchors.fill: parent
@@ -69,7 +169,7 @@ Item {
     Rectangle {
         anchors.centerIn: parent
         width: 600
-        height: 520
+        height: 600
         radius: 16
         color: colBase
 
@@ -415,6 +515,215 @@ Item {
                     }
 
                     Item { height: 10 }
+
+                    Rectangle {
+                        width: parent.width; height: 1; color: colBorder; opacity: 0.4
+                    }
+
+                    Item { height: 8 }
+
+                    Text {
+                        text: "\uF0E2  Update Shell"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 12
+                        font.weight: Font.Bold
+                        color: colText
+                    }
+
+                    Item { height: 6 }
+
+                    Column {
+                        width: parent.width
+                        spacing: 4
+                        visible: repoPath.length > 0
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 6
+
+                            Text {
+                                text: "Branch:"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colSub
+                                Layout.preferredWidth: 48
+                            }
+                            Text {
+                                text: root.branch.length > 0 ? root.branch : "\u2026"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colAccent
+                                font.weight: Font.Bold
+                            }
+                            Item { Layout.fillWidth: true }
+                            Text {
+                                text: root.commit.length > 0 ? root.commit : "\u2026"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colSub
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 6
+
+                            Text {
+                                text: "Updated:"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colSub
+                                Layout.preferredWidth: 48
+                            }
+                            Text {
+                                text: root.dateInfo.length > 0 ? root.dateInfo : "\u2026"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colText
+                            }
+                        }
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 6
+                            visible: root.behindInfo.length > 0
+
+                            Text {
+                                text: "Behind:"
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: colSub
+                                Layout.preferredWidth: 48
+                            }
+                            Text {
+                                text: root.behindInfo === "0" ? "Up to date" : "%1 commits".arg(root.behindInfo)
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 10
+                                color: root.behindInfo === "0" ? "#4ade80" : "#facc15"
+                                font.weight: Font.Bold
+                            }
+                        }
+
+                        Item { height: 4 }
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: 8
+
+                            Rectangle {
+                                id: checkBtn
+                                height: 28; radius: 6
+                                color: colLayer1
+                                Layout.fillWidth: true
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.updateChecking ? "\u25B6 Checking\u2026" : "\uF021  Check Updates"
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                    color: colText
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onEntered: checkBtn.color = colLayer2
+                                    onExited: checkBtn.color = colLayer1
+                                    onClicked: root.checkUpdates()
+                                }
+                            }
+
+                            Rectangle {
+                                id: pullBtn
+                                height: 28; radius: 6
+                                color: colAccentBg
+                                Layout.fillWidth: true
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.updateChecking ? "\u25B6 \u2026" : "\uF01E  Update Now"
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                    color: colAccent
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onEntered: pullBtn.color = Qt.lighter(colAccentBg, 1.1)
+                                    onExited: pullBtn.color = colAccentBg
+                                    onClicked: root.updateNow()
+                                }
+                            }
+
+                            Rectangle {
+                                id: restartBtn
+                                height: 28; radius: 6
+                                color: colLayer1
+                                Layout.preferredWidth: 110
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\u21BB  Restart Shell"
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                    color: colText
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onEntered: restartBtn.color = colLayer2
+                                    onExited: restartBtn.color = colLayer1
+                                    onClicked: {
+                                        var home = Quickshell.env("HOME")
+                                        Process.exec("sh", ["-c", "pkill -x qs; sleep 0.5; quickshell -c mrtrotid-shell &"])
+                                    }
+                                }
+                            }
+                        }
+
+                        Item { height: 4 }
+
+                        Text {
+                            width: parent.width
+                            text: root.updateResult
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 10
+                            color: root.updateResult.indexOf("Up to date") >= 0 ? "#4ade80"
+                                 : root.updateResult.indexOf("Updated") >= 0 ? "#60a5fa"
+                                 : root.updateResult.length > 0 ? "#f87171" : "transparent"
+                            visible: root.updateResultVisible
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width; height: 80
+                        color: "transparent"
+                        visible: repoPath.length === 0
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Shell not in a git repository.\nClone from github.com/Noro18/linux-ricing-dotfiles"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 10
+                            color: colSub
+                            opacity: 0.5
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                    }
+
+                    Item { height: 8 }
 
                     Text {
                         text: "Built with Quickshell \u2665"

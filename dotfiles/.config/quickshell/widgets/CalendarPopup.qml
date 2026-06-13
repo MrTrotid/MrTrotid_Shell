@@ -3,32 +3,31 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
-import "../services"
 
 Item {
     id: popup
 
     readonly property string scriptsDir: Qt.resolvedUrl("../calendar/").toString().replace("file://", "")
 
-    // ── Colors (from matugen via ColorService) ──
-    readonly property color _base:    ColorService.surfaceContainerLow
-    readonly property color _mantle:  ColorService.surfaceContainer
-    readonly property color _crust:   ColorService.scrim
-    readonly property color _text:    ColorService.surfaceText
-    readonly property color _sub1:    ColorService.surfaceVariantText
-    readonly property color _sub0:    ColorService.outline
-    readonly property color _surf2:   ColorService.outlineVariant
-    readonly property color _surf1:   ColorService.surfaceContainerHigh
-    readonly property color _surf0:   ColorService.surfaceContainer
-    readonly property color _over2:   ColorService.surfaceVariantText
-    readonly property color _over1:   ColorService.outline
-    readonly property color _over0:   ColorService.outline
-    readonly property color _accent:  ColorService.primary
-    readonly property color _accentLight: ColorService.primaryContainer
-    readonly property color _green:   ColorService.success
-    readonly property color _red:     ColorService.error
-    readonly property color _peach:   ColorService.tertiary
-    readonly property color _lavender: ColorService.secondaryContainer
+    // ── Colors (match bar theme) ──
+    readonly property color _base: "#131514"
+    readonly property color _mantle: "#0f1110"
+    readonly property color _crust: "#090a09"
+    readonly property color _text: "#c5cbc9"
+    readonly property color _sub1: "#8a9290"
+    readonly property color _sub0: "#6a7270"
+    readonly property color _surf2: "#4a504e"
+    readonly property color _surf1: "#2a2e2c"
+    readonly property color _surf0: "#1c1e1d"
+    readonly property color _over2: "#5a605e"
+    readonly property color _over1: "#3a3f3d"
+    readonly property color _over0: "#2e3331"
+    readonly property color _accent: "#81d5ca"
+    readonly property color _accentLight: "#b2ebe3"
+    readonly property color _green: "#92d5ab"
+    readonly property color _red: "#ffb4ab"
+    readonly property color _peach: "#e8a87c"
+    readonly property color _lavender: "#cdb4db"
 
     // ── Time of day colors ──
     readonly property color timeColor: {

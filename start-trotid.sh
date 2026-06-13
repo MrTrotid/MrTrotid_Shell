@@ -1,2 +1,3 @@
 #!/bin/bash
-exec Hyprland -c /home/mrtrotid-ssd/Desktop/Trotid_Shell/hypr/hyprland.conf
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec Hyprland -c "$DIR/dotfiles/.config/hypr/hyprland.conf"
