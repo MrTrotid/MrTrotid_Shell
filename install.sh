@@ -147,15 +147,38 @@ step_paru() {
     warn "Build deps may have partial failures. Continuing..."
   fi
 
-  info "Cloning paru (aur.archlinux.org/paru)..."
-  if ! git clone --depth=1 https://aur.archlinux.org/paru.git "$tmp/paru" 2>/dev/null; then
-    fail "Failed to clone paru — check internet connection."
-    rm -rf "$tmp"
-    return 1
+  # Try pre-compiled paru-bin first (fast, ~5 seconds)
+  info "Cloning paru-bin (pre-compiled, fast)..."
+  if git clone --depth=1 https://aur.archlinux.org/paru-bin.git "$tmp/paru" 2>/dev/null; then
+    info "Building paru-bin..."
+    (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
+  else
+    warn "Failed to clone paru-bin. Trying source build..."
   fi
 
-  info "Building paru (source build)..."
-  (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
+  # If paru-bin failed, try source build
+  if ! command -v paru &>/dev/null; then
+    warn "paru-bin failed. Source build takes a few minutes (Rust compilation)."
+    ask "Try source build of paru instead?" || {
+      echo
+      echo -e "  ${GY}Install paru manually later:${R}"
+      echo -e "    ${B}sudo pacman -S --needed base-devel git${R}"
+      echo -e "    ${B}git clone https://aur.archlinux.org/paru.git${R}"
+      echo -e "    ${B}cd paru && makepkg -si${R}"
+      echo
+      rm -rf "$tmp"
+      ask "Continue without AUR helper?" || exit 1
+      return 1
+    }
+    info "Cloning paru (aur.archlinux.org/paru)..."
+    if ! git clone --depth=1 https://aur.archlinux.org/paru.git "$tmp/paru" 2>/dev/null; then
+      fail "Failed to clone paru."
+      rm -rf "$tmp"
+      return 1
+    fi
+    info "Building paru from source (may take a few minutes)..."
+    (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
+  fi
 
   rm -rf "$tmp"
 
@@ -269,24 +292,15 @@ step_packages() {
   [[ -n "$EDITOR_PKG" ]] && ALL_PKGS+=("$EDITOR_PKG")
   [[ -n "$FILE_MGR" ]]  && ALL_PKGS+=("$FILE_MGR")
 
-  local pkg_type
-  for pkg in "${EXTRA_PKGS[@]}"; do
-    [[ "$pkg" == *" "* ]] && continue
-    local desc_idx=$(( $(echo "${EXTRA_PKGS[*]}" | grep -o " $pkg " | wc -l) ))
-    # Actually let me use a simpler approach
-  done
-
-  # ── Extra toggles ──
+  # ── Extra packages (not auto-installed) ──
   echo
-  echo -e "  ${GY}Extra packages:${R}"
+  echo -e "  ${GY}Optional extras (install manually if needed):${R}"
   for ((i=0; i<${#EXTRA_PKGS[@]}; i+=2)); do
     local ep="${EXTRA_PKGS[i]}"
     local ed="${EXTRA_PKGS[i+1]}"
-    if ask "Install ${B}$ep${R}? ${GY}($ed)${R}"; then
-      ALL_PKGS+=("$ep")
-      ok "Added: $ep"
-    fi
+    echo -e "    ${GY}•${R} ${B}$ep${R} — ${GY}$ed${R}"
   done
+  echo -e "  ${GY}  → ${R}${D}sudo pacman -S cava pavucontrol nm-connection-editor btop${R}"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
