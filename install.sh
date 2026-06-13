@@ -31,12 +31,12 @@ muted() { echo -e "  ${GY}${D}$*${R}"; }
 title() { echo -e "\n  ${B}${WH}┌─ $*${R}"; echo -e "  ${B}${WH}└${R}"; }
 
 ask() {
-  local msg="$1" default="${2:-y}"
+  local msg="$1"
   local yn
   while true; do
-    echo -ne "  ${CY}?${R}  ${msg} ${GY}[${default^^}/$( [[ "$default" == "y" ]] && echo "n" || echo "N" )]${R} "
+    echo -ne "  ${CY}?${R}  ${msg} ${GY}[Y/n]${R} "
     read -r yn
-    [[ -z "$yn" ]] && yn="$default"
+    [[ -z "$yn" ]] && yn="y"
     case "${yn,,}" in y|yes) return 0;; n|no) return 1;; esac
   done
 }
@@ -81,7 +81,7 @@ logo
 
 if ! command -v pacman &>/dev/null; then
   warn "This installer requires an Arch-based distribution (pacman)."
-  ask "Continue anyway?" "n" || exit 1
+  ask "Continue anyway?" || exit 1
 fi
 
 # ── SCRIPT DIRS ──
@@ -120,7 +120,7 @@ if ! sudo -n true 2>/dev/null; then
 fi
 
 echo
-ask "Begin installing Trotid Shell?" "y" || exit 0
+ask "Begin installing Trotid Shell?" || exit 0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  STEP 1 — Install paru
@@ -128,10 +128,16 @@ ask "Begin installing Trotid Shell?" "y" || exit 0
 step_paru() {
   title "Step 1: AUR Helper (paru)"
 
-  $HAS_PARU && { ok "paru already installed"; return 0; }
-  $HAS_YAY && { AUR_HELPER="yay"; ok "Using existing yay instead of paru"; return 0; }
+  if $HAS_PARU; then
+    ok "paru already installed"
+    ask "Reinstall paru?" || return 0
+  elif $HAS_YAY; then
+    AUR_HELPER="yay"
+    ok "Using existing yay instead of paru"
+    return 0
+  fi
 
-  ask "Install paru (AUR helper)?" "y" || { warn "Skipping. AUR packages must be installed manually."; return 1; }
+  ask "Install paru (AUR helper)?" || { warn "Skipping. AUR packages must be installed manually."; return 1; }
 
   local tmp
   tmp=$(mktemp -d) || { fail "Cannot create temp dir"; return 1; }
@@ -141,14 +147,14 @@ step_paru() {
     warn "Build deps may have partial failures. Continuing..."
   fi
 
-  info "Cloning paru-bin (aur.archlinux.org/paru-bin)..."
-  if ! git clone --depth=1 https://aur.archlinux.org/paru-bin.git "$tmp/paru" 2>/dev/null; then
-    fail "Failed to clone paru-bin — check internet connection."
+  info "Cloning paru (aur.archlinux.org/paru)..."
+  if ! git clone --depth=1 https://aur.archlinux.org/paru.git "$tmp/paru" 2>/dev/null; then
+    fail "Failed to clone paru — check internet connection."
     rm -rf "$tmp"
     return 1
   fi
 
-  info "Building paru-bin (pre-compiled, faster)..."
+  info "Building paru (source build)..."
   (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
 
   rm -rf "$tmp"
@@ -159,7 +165,7 @@ step_paru() {
     return 0
   else
     fail "paru installation failed."
-    ask "Continue without AUR helper?" "y" || exit 1
+    ask "Continue without AUR helper?" || exit 1
     return 1
   fi
 }
@@ -254,7 +260,7 @@ step_packages() {
 
   # ── File manager ──
   echo
-  ask "Install file manager (thunar)?" "y" && { FILE_MGR="thunar"; ok "File manager: ${B}thunar${R}"; } || true
+  ask "Install file manager (thunar)?" && { FILE_MGR="thunar"; ok "File manager: ${B}thunar${R}"; } || true
 
   # ── Assemble package list ──
   ALL_PKGS=("${CORE_PKGS[@]}")
@@ -276,7 +282,7 @@ step_packages() {
   for ((i=0; i<${#EXTRA_PKGS[@]}; i+=2)); do
     local ep="${EXTRA_PKGS[i]}"
     local ed="${EXTRA_PKGS[i+1]}"
-    if ask "Install ${B}$ep${R}? ${GY}($ed)${R}" "n"; then
+    if ask "Install ${B}$ep${R}? ${GY}($ed)${R}"; then
       ALL_PKGS+=("$ep")
       ok "Added: $ep"
     fi
@@ -303,7 +309,7 @@ step_install() {
   echo -e "  ${GY}${#NEED[@]} packages to install:${R}"
   muted "${NEED[*]}"
   echo
-  ask "Install missing packages?" "y" || { warn "Skipping package installation"; return 0; }
+  ask "Install missing packages?" || { warn "Skipping package installation"; return 0; }
 
   local helper="${AUR_HELPER:-paru}"
   if ! command -v "$helper" &>/dev/null; then
@@ -329,7 +335,7 @@ step_install() {
     muted "${REPO_NEED[*]}"
     sudo pacman -S --needed --noconfirm "${REPO_NEED[@]}" || {
       warn "Some repo packages failed"
-      ask "Continue anyway?" "y" || return 1
+      ask "Continue anyway?" || return 1
     }
   fi
 
@@ -345,7 +351,7 @@ step_install() {
       muted "${AUR_NEED[*]}"
       $helper -S --needed --noconfirm "${AUR_NEED[@]}" || {
         warn "Some AUR packages failed"
-        ask "Continue anyway?" "y" || return 1
+        ask "Continue anyway?" || return 1
       }
     fi
   fi
@@ -355,7 +361,7 @@ step_install() {
   # ── Verify hyprland is installed ──
   if ! pkg_installed hyprland; then
     warn "Hyprland was NOT installed. The compositor is required."
-    ask "Continue anyway? (you'll need to install hyprland manually)" "n" || exit 1
+    ask "Continue anyway? (you'll need to install hyprland manually)" || exit 1
   fi
 }
 
@@ -376,7 +382,7 @@ step_backup() {
   for d in "${dirs[@]}"; do echo -e "    ${GY}•${R} $HOME/.config/$d"; done
   echo
 
-  ask "Back up configs before deploying?" "y" || { warn "Skipping backup"; return 0; }
+  ask "Back up configs before deploying?" || { warn "Skipping backup"; return 0; }
 
   local ts; ts=$(date +"%Y%m%d_%H%M%S")
   local bk="$HOME/.config.bak-$ts"
@@ -395,10 +401,10 @@ step_backup() {
 step_deploy() {
   title "Step 5: Deploying Dotfiles"
 
-  ask "Deploy configuration files?" "y" || { warn "Skipping deployment"; return 0; }
+  ask "Deploy configuration files?" || { warn "Skipping deployment"; return 0; }
 
   # ── Quickshell (symlink choice) ──
-  if ask "Symlink quickshell config? ${GY}(enables live QML hot-reload)${R}" "y"; then
+  if ask "Symlink quickshell config? ${GY}(enables live QML hot-reload)${R}"; then
     [[ -d "$HOME/.config/quickshell" ]] && rm -rf "$HOME/.config/quickshell"
     ln -sf "$DOTFILES_DIR/.config/quickshell" "$HOME/.config/quickshell"
     ok "Symlinked quickshell config"
@@ -414,7 +420,7 @@ step_deploy() {
 
     if [[ -d "$dir" && -n "$(ls -A "$dir")" ]]; then
       if [[ -d "$HOME/.config/$name" ]]; then
-        if ask "Replace ${B}$name${R} config?" "y"; then
+        if ask "Replace ${B}$name${R} config?"; then
           rm -rf "$HOME/.config/$name"
           cp -r "$dir" "$HOME/.config/$name"
           ok "Deployed: $name"
@@ -516,7 +522,7 @@ step_post() {
     [[ -f "$HOME/.config/hypr/$f" ]] && { hypr_cfg="$HOME/.config/hypr/$f"; break; }
   done
   if [[ -n "$hypr_cfg" ]] && ! grep -q "quickshell.*mrtrotid" "$hypr_cfg" 2>/dev/null; then
-    if ask "Add Quickshell auto-start to your Hyprland config?" "y"; then
+    if ask "Add Quickshell auto-start to your Hyprland config?"; then
       if [[ "$hypr_cfg" == *.lua ]]; then
         echo "" >> "$hypr_cfg"
         echo "-- Trotid Shell" >> "$hypr_cfg"
@@ -553,7 +559,7 @@ step_autostart() {
 
   if [[ ${#dms[@]} -eq 0 ]]; then
     warn "No display manager detected. You'll need one to start Hyprland from a login screen."
-    if ask "Install SDDM (recommended)?" "y"; then
+    if ask "Install SDDM (recommended)?"; then
       sudo pacman -S --needed --noconfirm sddm && {
         sudo systemctl enable sddm.service
         ok "SDDM installed and enabled for auto-start"
@@ -565,12 +571,12 @@ step_autostart() {
   local dm="${dms[0]}"
   info "Detected display manager: ${B}$dm${R}"
 
-  if ask "Enable ${B}$dm${R} to start Hyprland automatically at boot?" "y"; then
+  if ask "Enable ${B}$dm${R} to start Hyprland automatically at boot?"; then
     if sudo systemctl enable "$dm.service" 2>/dev/null; then
       ok "$dm enabled — Hyprland will appear in the session list at login"
     else
       warn "Failed to enable $dm"
-      ask "Continue anyway?" "y" || return 1
+      ask "Continue anyway?" || return 1
     fi
   else
     info "Skipped. You can enable manually later: ${CY}sudo systemctl enable $dm${R}"
