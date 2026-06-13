@@ -141,25 +141,24 @@ step_paru() {
     warn "Build deps may have partial failures. Continuing..."
   fi
 
-  info "Cloning paru (aur.archlinux.org/paru)..."
-  if ! git clone --depth=1 https://aur.archlinux.org/paru.git "$tmp/paru" 2>/dev/null; then
-    fail "Failed to clone paru — check internet connection."
+  info "Cloning paru-bin (aur.archlinux.org/paru-bin)..."
+  if ! git clone --depth=1 https://aur.archlinux.org/paru-bin.git "$tmp/paru" 2>/dev/null; then
+    fail "Failed to clone paru-bin — check internet connection."
     rm -rf "$tmp"
     return 1
   fi
 
-  info "Building paru (this takes a moment)..."
-  (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -3
-  local result=$?
+  info "Building paru-bin (pre-compiled, faster)..."
+  (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
 
   rm -rf "$tmp"
 
-  if [[ $result -eq 0 ]] && command -v paru &>/dev/null; then
+  if command -v paru &>/dev/null; then
     AUR_HELPER="paru"; HAS_PARU=true
     ok "paru installed successfully"
     return 0
   else
-    fail "paru build failed."
+    fail "paru installation failed."
     ask "Continue without AUR helper?" "y" || exit 1
     return 1
   fi
