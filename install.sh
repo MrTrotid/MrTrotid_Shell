@@ -2,373 +2,452 @@
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TROTID SHELL — Automated Installer
-#  Installs Hyprland + Quickshell desktop shell with all dependencies
+#  Interactive TUI installer for Hyprland + Quickshell desktop shell
 #  Usage: chmod +x install.sh && ./install.sh
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -uo pipefail
 
-# ── Colors & UI ──
-RST='\e[0m'; BOLD='\e[1m'; DIM='\e[2m'; RED='\e[31m'; GREEN='\e[32m'
-YELLOW='\e[33m'; BLUE='\e[34m'; MAGENTA='\e[35m'; CYAN='\e[36m'; WHITE='\e[37m'
-GRAY='\e[90m'; BGRED='\e[41m'; BGGREEN='\e[42m'; BGBLUE='\e[44m'
+# ── Terminal colors ──
+R='\e[0m'; B='\e[1m'; D='\e[2m'; I='\e[3m'
+RED='\e[31m'; GR='\e[32m'; YE='\e[33m'; BL='\e[34m'; MG='\e[35m'; CY='\e[36m'
+WH='\e[37m'; GY='\e[90m'; BG_R='\e[41m'; BG_G='\e[42m'; BG_B='\e[44m'
 
+# ── UI helpers ──
 logo() {
   clear
-  echo -e "${CYAN}${BOLD}"
-  echo '  ╔═══════════════════════════════════════════╗'
-  echo '  ║        TROTID SHELL INSTALLER             ║'
-  echo '  ║   Hyprland + Quickshell Desktop Shell     ║'
-  echo '  ╚═══════════════════════════════════════════╝'
-  echo -e "${RST}"
+  echo -e "  ${CY}${B}╔═══════════════════════════════════════════════╗${R}"
+  echo -e "  ${CY}${B}║         T R O T I D   S H E L L              ║${R}"
+  echo -e "  ${CY}${B}║   Hyprland + Quickshell Desktop Shell         ║${R}"
+  echo -e "  ${CY}${B}╚═══════════════════════════════════════════════╝${R}"
+  echo
 }
 
-info()    { echo -e "  ${BLUE}◆${RST} $*"; }
-ok()      { echo -e "  ${GREEN}✔${RST} $*"; }
-warn()    { echo -e "  ${YELLOW}⚠${RST} $*"; }
-fail()    { echo -e "  ${RED}✘${RST} $*"; }
-header()  { echo -e "\n  ${BOLD}${WHITE}── $* ──${RST}\n"; }
-prompt_yn() {
+info()  { echo -e "  ${BL}◆${R}  $*"; }
+ok()    { echo -e "  ${GR}✔${R}  $*"; }
+warn()  { echo -e "  ${YE}⚠${R}  $*"; }
+fail()  { echo -e "  ${RED}✘${R}  $*"; }
+muted() { echo -e "  ${GY}${D}$*${R}"; }
+title() { echo -e "\n  ${B}${WH}┌─ $*${R}"; echo -e "  ${B}${WH}└${R}"; }
+
+ask() {
   local msg="$1" default="${2:-y}"
   local yn
   while true; do
-    echo -ne "  ${CYAN}?${RST} ${msg} ${GRAY}[${default^^}/$( [[ "$default" == "y" ]] && echo "n" || echo "N" )]${RST} "
+    echo -ne "  ${CY}?${R}  ${msg} ${GY}[${default^^}/$( [[ "$default" == "y" ]] && echo "n" || echo "N" )]${R} "
     read -r yn
     [[ -z "$yn" ]] && yn="$default"
-    case "${yn,,}" in
-      y|yes) return 0 ;;
-      n|no)  return 1 ;;
-    esac
+    case "${yn,,}" in y|yes) return 0;; n|no) return 1;; esac
   done
 }
 
-# ── Safety checks ──
+pick() {
+  local msg="$1"; shift
+  local options=("$@")
+  echo -e "  ${CY}?${R}  ${msg}"
+  for i in "${!options[@]}"; do
+    echo -e "      ${GY}$((i+1)).${R} ${options[$i]}"
+  done
+  local choice
+  while true; do
+    echo -ne "  ${GY}  Enter number [1-${#options[@]}]:${R} "
+    read -r choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && ((choice >= 1 && choice <= ${#options[@]})); then
+      return $choice
+    fi
+  done
+}
+
+spinner() {
+  local pid=$1; local msg="$2"
+  local spin=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local i=0
+  echo -ne "  ${GY}${spin[0]}${R}  ${msg}..."
+  while kill -0 "$pid" 2>/dev/null; do
+    echo -ne "\r  ${GY}${spin[i]}${R}  ${msg}..."
+    i=$(( (i+1) % 10 ))
+    sleep 0.1
+  done
+  wait "$pid" && echo -e "\r  ${GR}✔${R}  ${msg}" || echo -e "\r  ${RED}✘${R}  ${msg} ${GY}(failed)${R}"
+}
+
+# ── Safety ──
 if [[ $EUID -eq 0 ]]; then
-  echo -e "\n  ${BGRED}${WHITE} ERROR ${RST} ${RED}Do not run this script as root. Run as a normal user.${RST}"
+  echo -e "\n  ${BG_R}${WH} ERROR ${R} ${RED}Do not run as root. Run as a normal user.${R}"
   exit 1
 fi
 
 logo
 
 if ! command -v pacman &>/dev/null; then
-  warn "This installer only supports Arch-based distributions."
-  warn "Detected package manager is not pacman."
-  prompt_yn "Continue anyway?" "n" || exit 1
+  warn "This installer requires an Arch-based distribution (pacman)."
+  ask "Continue anyway?" "n" || exit 1
 fi
 
-# ── Script paths ──
+# ── SCRIPT DIRS ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="$SCRIPT_DIR/dotfiles"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PHASE 0 — Detect system
+#  SYSTEM CHECK
 # ═══════════════════════════════════════════════════════════════════════════════
-header "System Detection"
+title "System Information"
 
 if [[ -f /etc/os-release ]]; then
   . /etc/os-release
   OS="${PRETTY_NAME:-$NAME $VERSION_ID}"
 else
-  OS="Arch Linux (unknown variant)"
+  OS="Arch Linux (unknown)"
 fi
-info "Distribution: ${BOLD}$OS${RST}"
-
-ARCH=$(uname -m)
-info "Architecture: ${BOLD}$ARCH${RST}"
+info "Distribution: ${B}${OS}${R}"
+info "Kernel: ${B}$(uname -r)${R}"
 
 HAS_PARU=false; HAS_YAY=false
 command -v paru &>/dev/null && HAS_PARU=true
 command -v yay &>/dev/null && HAS_YAY=true
 
 if $HAS_PARU; then
-  AUR_HELPER="paru"; ok "AUR helper found: ${BOLD}paru${RST}"
+  ok "paru detected"
 elif $HAS_YAY; then
-  AUR_HELPER="yay";  ok "AUR helper found: ${BOLD}yay${RST}"
+  ok "yay detected (will be used for AUR packages)"
 else
-  warn "No AUR helper found. paru will be installed in the next step."
-  AUR_HELPER=""
+  warn "No AUR helper found — paru will be installed"
 fi
 
-if ! command -v sudo &>/dev/null; then
-  warn "sudo is not installed. Install it first: ${GRAY}pacman -S sudo${RST}"
-  exit 1
-fi
 if ! sudo -n true 2>/dev/null; then
-  info "sudo access needed for package installation."
-  sudo -v || { fail "sudo failed. Cannot continue."; exit 1; }
+  info "Some steps need sudo access."
+  sudo -v || { fail "sudo authentication failed."; exit 1; }
 fi
 
 echo
-prompt_yn "Ready to start installing Trotid Shell?" "y" || exit 0
+ask "Begin installing Trotid Shell?" "y" || exit 0
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  PHASE 1 — Install paru (AUR helper)
+#  STEP 1 — Install paru
 # ═══════════════════════════════════════════════════════════════════════════════
-install_paru() {
-  header "Phase 1/6 — AUR Helper (paru)"
+step_paru() {
+  title "Step 1: AUR Helper (paru)"
 
-  if $HAS_PARU; then
-    ok "paru is already installed. Skipping."
-    return 0
+  $HAS_PARU && { ok "paru already installed"; return 0; }
+  $HAS_YAY && { AUR_HELPER="yay"; ok "Using existing yay instead of paru"; return 0; }
+
+  ask "Install paru (AUR helper)?" "y" || { warn "Skipping. AUR packages must be installed manually."; return 1; }
+
+  local tmp
+  tmp=$(mktemp -d) || { fail "Cannot create temp dir"; return 1; }
+
+  info "Installing build dependencies..."
+  if ! sudo pacman -S --needed --noconfirm base-devel git 2>/dev/null; then
+    warn "Build deps may have partial failures. Continuing..."
   fi
 
-  info "paru is needed to install Quickshell from AUR."
-  prompt_yn "Install paru?" "y" || { warn "Skipping paru. AUR packages must be installed manually."; return 1; }
-
-  local workdir
-  workdir=$(mktemp -d) || { fail "Failed to create temp dir"; return 1; }
-
-  info "Installing build dependencies (base-devel, git)..."
-  if ! sudo pacman -S --needed --noconfirm base-devel git 2>&1 | grep -v 'warning:\|^$'; then
-    warn "Some build deps may have failed. Continuing..."
-  fi
-
-  info "Cloning paru from AUR..."
-  if ! git clone https://aur.archlinux.org/paru.git "$workdir/paru" 2>/dev/null; then
-    fail "Failed to clone paru. Check internet connection."
-    rm -rf "$workdir"
+  info "Cloning paru (aur.archlinux.org/paru)..."
+  if ! git clone --depth=1 https://aur.archlinux.org/paru.git "$tmp/paru" 2>/dev/null; then
+    fail "Failed to clone paru — check internet connection."
+    rm -rf "$tmp"
     return 1
   fi
 
-  info "Building paru (this may take a while)..."
-  cd "$workdir/paru" || return 1
-  if ! makepkg -si --noconfirm 2>&1 | tail -5; then
-    fail "paru build failed."
-    cd /; rm -rf "$workdir"
-    return 1
-  fi
+  info "Building paru (this takes a moment)..."
+  (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -3
+  local result=$?
 
-  cd /; rm -rf "$workdir"
-  if command -v paru &>/dev/null; then
+  rm -rf "$tmp"
+
+  if [[ $result -eq 0 ]] && command -v paru &>/dev/null; then
     AUR_HELPER="paru"; HAS_PARU=true
-    ok "paru installed successfully."
+    ok "paru installed successfully"
     return 0
   else
-    fail "paru installation seems to have failed."
+    fail "paru build failed."
+    ask "Continue without AUR helper?" "y" || exit 1
     return 1
   fi
 }
 
-# ── Package lists ──
-REPO_PACKAGES=(
-  hyprland rofi kitty wallust matugen swaybg cava wlogout cliphist
-  grim slurp swappy hyprpicker hyprsunset wf-recorder playerctl
-  brightnessctl jq wl-clipboard wget unzip fontconfig imagemagick
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 2 — Detect installed & choose packages
+# ═══════════════════════════════════════════════════════════════════════════════
+pkg_installed() { pacman -Qi "$1" &>/dev/null; }
+
+CORE_PKGS=(
+  hyprland
+  swaybg
+  rofi-wayland
+  wlogout
+  cliphist
+  grim
+  slurp
+  swappy
+  hyprpicker
+  hyprsunset
+  wf-recorder
+  playerctl
+  brightnessctl
+  jq
+  wl-clipboard
+  imagemagick
+  wget
+  unzip
+  noto-fonts
 )
 
-AUR_PACKAGES=(quickshell)
-
-# Extra optional packages for a complete desktop
-OPTIONAL_PACKAGES=(
-  "ghostty"        "Terminal emulator (used by Super+Return)"
-  "thunar"         "File manager (used by Super+E)"
-  "zen-browser"    "Browser (used by Super+W)"
-  "brave-browser"  "Alternative browser (Super+Shift+W)"
-  "nvim"           "Text editor (used by Super+C)"
-  "btop"           "System monitor"
-  "pavucontrol"    "Audio settings"
-  "nm-connection-editor" "Network settings"
-  "spotify"        "Music player"
-  "discord"        "Chat app"
-  "obsidian"       "Note taking"
+AUR_CORE=(
+  quickshell
+  wallust
+  matugen
 )
 
-# ── Phase 2 — Install packages ──
-install_packages() {
-  header "Phase 2/6 — Package Installation"
+EXTRA_PKGS=(
+  "cava"       "Audio visualizer (wave form in bar)"
+  "pavucontrol" "Audio settings panel"
+  "nm-connection-editor" "Network manager GUI"
+  "btop"       "System monitor"
+)
 
-  info "Checking package status..."
-  local to_install=()
-  for pkg in "${REPO_PACKAGES[@]}"; do
-    if pacman -Qi "$pkg" &>/dev/null; then
-      echo -e "  ${GRAY}  ✔ $pkg${RST} ${GREEN}(installed)${RST}"
-    else
-      to_install+=("$pkg")
-    fi
+step_packages() {
+  title "Step 2: Package Selection"
+
+  # ── Terminal ──
+  echo -e "  ${GY}Choose your default terminal:${R}"
+  pick "" "ghostty (recommended)" "kitty" "alacritty" "foot" "wezterm" "Skip"
+  local term_choice=$?
+  local TERMINAL=""
+  case $term_choice in
+    1) TERMINAL="ghostty" ;;
+    2) TERMINAL="kitty" ;;
+    3) TERMINAL="alacritty" ;;
+    4) TERMINAL="foot" ;;
+    5) TERMINAL="wezterm" ;;
+    6) TERMINAL="" ;;
+  esac
+  [[ -n "$TERMINAL" ]] && ok "Terminal: ${B}$TERMINAL${R}" || warn "No terminal selected"
+
+  # ── Browser ──
+  echo
+  echo -e "  ${GY}Choose your browser:${R}"
+  pick "" "zen-browser (recommended)" "brave-browser" "firefox" "chromium" "Skip"
+  local br_choice=$?
+  local BROWSER=""
+  case $br_choice in
+    1) BROWSER="zen-browser" ;;
+    2) BROWSER="brave-browser" ;;
+    3) BROWSER="firefox" ;;
+    4) BROWSER="chromium" ;;
+    5) BROWSER="" ;;
+  esac
+  [[ -n "$BROWSER" ]] && ok "Browser: ${B}$BROWSER${R}" || warn "No browser selected"
+
+  # ── Editor ──
+  echo
+  echo -e "  ${GY}Choose your text editor:${R}"
+  pick "" "neovim (recommended)" "vim" "nano" "visual-studio-code-bin (AUR)" "Skip"
+  local ed_choice=$?
+  local EDITOR_PKG=""
+  case $ed_choice in
+    1) EDITOR_PKG="neovim" ;;
+    2) EDITOR_PKG="vim" ;;
+    3) EDITOR_PKG="nano" ;;
+    4) EDITOR_PKG="visual-studio-code-bin" ;;
+    5) EDITOR_PKG="" ;;
+  esac
+  [[ -n "$EDITOR_PKG" ]] && ok "Editor: ${B}$EDITOR_PKG${R}" || warn "No editor selected"
+
+  # ── File manager ──
+  echo
+  ask "Install file manager (thunar)?" "y" && { FILE_MGR="thunar"; ok "File manager: ${B}thunar${R}"; } || true
+
+  # ── Assemble package list ──
+  ALL_PKGS=("${CORE_PKGS[@]}")
+  [[ -n "$TERMINAL" ]] && ALL_PKGS+=("$TERMINAL")
+  [[ -n "$BROWSER" ]]   && ALL_PKGS+=("$BROWSER")
+  [[ -n "$EDITOR_PKG" ]] && ALL_PKGS+=("$EDITOR_PKG")
+  [[ -n "$FILE_MGR" ]]  && ALL_PKGS+=("$FILE_MGR")
+
+  local pkg_type
+  for pkg in "${EXTRA_PKGS[@]}"; do
+    [[ "$pkg" == *" "* ]] && continue
+    local desc_idx=$(( $(echo "${EXTRA_PKGS[*]}" | grep -o " $pkg " | wc -l) ))
+    # Actually let me use a simpler approach
   done
 
-  if [[ ${#to_install[@]} -eq 0 ]]; then
-    ok "All repository packages are already installed."
-  else
-    echo -e "  ${GRAY}  ${#to_install[@]} packages need installation${RST}"
-    prompt_yn "Install ${#to_install[@]} missing packages?" "y" || { warn "Skipping package installation."; }
-    if [[ $? -eq 0 ]]; then
-      info "Updating package databases..."
-      sudo pacman -Sy --noconfirm 2>&1 | grep -v 'warning:\|^$' || true
-
-      info "Installing missing packages..."
-      if ! sudo pacman -S --needed --noconfirm "${to_install[@]}"; then
-        warn "Some packages failed. Check output above."
-        prompt_yn "Continue anyway?" "y" || exit 1
-      else
-        ok "Repository packages installed."
-      fi
+  # ── Extra toggles ──
+  echo
+  echo -e "  ${GY}Extra packages:${R}"
+  for ((i=0; i<${#EXTRA_PKGS[@]}; i+=2)); do
+    local ep="${EXTRA_PKGS[i]}"
+    local ed="${EXTRA_PKGS[i+1]}"
+    if ask "Install ${B}$ep${R}? ${GY}($ed)${R}" "n"; then
+      ALL_PKGS+=("$ep")
+      ok "Added: $ep"
     fi
-  fi
-
-  # AUR packages
-  if [[ ${#AUR_PACKAGES[@]} -gt 0 ]]; then
-    local aur_missing=()
-    for pkg in "${AUR_PACKAGES[@]}"; do
-      pacman -Qi "$pkg" &>/dev/null || aur_missing+=("$pkg")
-    done
-
-    if [[ ${#aur_missing[@]} -gt 0 ]]; then
-      echo
-      info "AUR packages to install: ${aur_missing[*]}"
-      if [[ -n "${AUR_HELPER:-}" ]]; then
-        prompt_yn "Install AUR packages?" "y" || { warn "Skipping AUR packages."; }
-        if [[ $? -eq 0 ]]; then
-          if ! $AUR_HELPER -S --needed --noconfirm "${aur_missing[@]}"; then
-            warn "Some AUR packages failed."
-            prompt_yn "Continue anyway?" "y" || exit 1
-          else
-            ok "AUR packages installed."
-          fi
-        fi
-      else
-        warn "No AUR helper available. Install manually:"
-        echo -e "  ${GRAY}  ${AUR_HELPER:-paru} -S ${aur_missing[*]}${RST}"
-      fi
-    else
-      ok "All AUR packages already installed."
-    fi
-  fi
+  done
 }
 
-# ── Phase 3 — Optional extras ──
-install_optional() {
-  header "Phase 3/6 — Optional Applications"
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 3 — Install packages via paru
+# ═══════════════════════════════════════════════════════════════════════════════
+step_install() {
+  title "Step 3: Installing Packages"
 
-  info "These applications are referenced by keybinds but not required."
-  prompt_yn "Choose optional apps to install?" "y" || return 0
-
-  local i=0 selected=()
-  for ((i=0; i<${#OPTIONAL_PACKAGES[@]}; i+=2)); do
-    local pkg="${OPTIONAL_PACKAGES[i]}"
-    local desc="${OPTIONAL_PACKAGES[i+1]}"
-
-    if pacman -Qi "$pkg" &>/dev/null; then
-      echo -e "  ${GRAY}  ✔ $pkg — $desc${RST} ${GREEN}(installed)${RST}"
-      continue
-    fi
-
-    if prompt_yn "Install ${BOLD}$pkg${RST}? ${GRAY}($desc)${RST}" "n"; then
-      selected+=("$pkg")
-    fi
+  local NEED_INSTALL=()
+  for pkg in "${ALL_PKGS[@]}"; do
+    pkg_installed "$pkg" || NEED_INSTALL+=("$pkg")
   done
 
-  if [[ ${#selected[@]} -gt 0 ]]; then
-    info "Installing selected packages..."
-    if ! sudo pacman -S --needed --noconfirm "${selected[@]}"; then
-      warn "Some optional packages failed."
-    else
-      ok "Optional packages installed."
-    fi
-  fi
-}
-
-# ── Phase 4 — Backup ──
-backup_configs() {
-  header "Phase 4/6 — Configuration Backup"
-
-  local backup_dirs=()
-  for dir in hypr rofi kitty quickshell wlogout scripts; do
-    [[ -d "$HOME/.config/$dir" ]] && backup_dirs+=("$dir")
+  local NEED_AUR=()
+  for pkg in "${AUR_CORE[@]}"; do
+    pkg_installed "$pkg" || NEED_AUR+=("$pkg")
   done
 
-  if [[ ${#backup_dirs[@]} -eq 0 ]]; then
-    ok "No existing configs to back up."
+  if [[ ${#NEED_INSTALL[@]} -eq 0 && ${#NEED_AUR[@]} -eq 0 ]]; then
+    ok "All packages already installed"
     return 0
   fi
 
-  info "Existing configs found: ${backup_dirs[*]}"
-  prompt_yn "Back up these configs?" "y" || { warn "Skipping backup."; return 0; }
+  if [[ ${#NEED_INSTALL[@]} -gt 0 ]]; then
+    echo -e "  ${GY}${#NEED_INSTALL[@]} repository packages to install:${R}"
+    muted "${NEED_INSTALL[*]}"
+    echo
+    ask "Install missing packages?" "y" || { warn "Skipping package installation"; return 0; }
+
+    info "Syncing repositories..."
+    sudo pacman -Sy --noconfirm 2>/dev/null || true
+
+    info "Installing packages..."
+    if sudo pacman -S --needed --noconfirm "${NEED_INSTALL[@]}"; then
+      ok "Repository packages installed"
+    else
+      warn "Some packages failed to install."
+      ask "Continue anyway?" "y" || return 1
+    fi
+  fi
+
+  if [[ ${#NEED_AUR[@]} -gt 0 ]]; then
+    echo
+    echo -e "  ${GY}${#NEED_AUR[@]} AUR packages to install:${R}"
+    muted "${NEED_AUR[*]}"
+    echo
+    ask "Install AUR packages?" "y" || { warn "Skipping AUR packages"; return 0; }
+
+    local helper="${AUR_HELPER:-paru}"
+    if ! command -v "$helper" &>/dev/null; then
+      fail "AUR helper ($helper) not found. Install manually:"
+      muted "git clone https://aur.archlinux.org/<package>.git && cd <package> && makepkg -si"
+      return 1
+    fi
+
+    info "Installing AUR packages via $helper..."
+    if $helper -S --needed --noconfirm "${NEED_AUR[@]}"; then
+      ok "AUR packages installed"
+    else
+      warn "Some AUR packages failed."
+      ask "Continue anyway?" "y" || return 1
+    fi
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 4 — Backup existing configs
+# ═══════════════════════════════════════════════════════════════════════════════
+step_backup() {
+  title "Step 4: Configuration Backup"
+
+  local dirs=()
+  for d in hypr rofi quickshell wlogout scripts kitty; do
+    [[ -d "$HOME/.config/$d" ]] && dirs+=("$d")
+  done
+
+  [[ ${#dirs[@]} -eq 0 ]] && { ok "No existing configs to back up"; return 0; }
+
+  echo -e "  ${GY}These existing configs will be backed up:${R}"
+  for d in "${dirs[@]}"; do echo -e "    ${GY}•${R} $HOME/.config/$d"; done
+  echo
+
+  ask "Back up configs before deploying?" "y" || { warn "Skipping backup"; return 0; }
 
   local ts; ts=$(date +"%Y%m%d_%H%M%S")
-  local backup="$HOME/.config.bak-$ts"
-  mkdir -p "$backup" || { fail "Cannot create backup dir."; return 1; }
+  local bk="$HOME/.config.bak-$ts"
+  mkdir -p "$bk" || { fail "Cannot create backup directory"; return 1; }
 
-  for dir in "${backup_dirs[@]}"; do
-    mv "$HOME/.config/$dir" "$backup/" 2>/dev/null && ok "Backed up: ${BOLD}$dir${RST}"
+  for d in "${dirs[@]}"; do
+    mv "$HOME/.config/$d" "$bk/" 2>/dev/null && ok "Backed up: $d"
   done
 
-  info "Backup saved to: ${GRAY}$backup${RST}"
+  info "Backup saved to: ${GY}$bk${R}"
 }
 
-# ── Phase 5 — Deploy dotfiles ──
-deploy_dotfiles() {
-  header "Phase 5/6 — Deploying Dotfiles"
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 5 — Deploy dotfiles
+# ═══════════════════════════════════════════════════════════════════════════════
+step_deploy() {
+  title "Step 5: Deploying Dotfiles"
 
-  # Quickshell (symlink for live dev)
-  if [[ -d "$DOTFILES_DIR/.config/quickshell" ]]; then
-    if prompt_yn "Symlink quickshell config? ${GRAY}(enables live QML reload)${RST}" "y"; then
-      [[ -d "$HOME/.config/quickshell" ]] && rm -rf "$HOME/.config/quickshell"
-      ln -sf "$DOTFILES_DIR/.config/quickshell" "$HOME/.config/quickshell"
-      ok "Symlinked quickshell config"
-    else
-      info "Copying quickshell config instead..."
-      cp -r "$DOTFILES_DIR/.config/quickshell" "$HOME/.config/"
-      ok "Copied quickshell config"
-    fi
+  ask "Deploy configuration files?" "y" || { warn "Skipping deployment"; return 0; }
+
+  # ── Quickshell (symlink choice) ──
+  if ask "Symlink quickshell config? ${GY}(enables live QML hot-reload)${R}" "y"; then
+    [[ -d "$HOME/.config/quickshell" ]] && rm -rf "$HOME/.config/quickshell"
+    ln -sf "$DOTFILES_DIR/.config/quickshell" "$HOME/.config/quickshell"
+    ok "Symlinked quickshell config"
+  else
+    cp -r "$DOTFILES_DIR/.config/quickshell" "$HOME/.config/"
+    ok "Copied quickshell config"
   fi
 
-  # Other configs (hypr, rofi, kitty, wallpapers, etc.)
+  # ── Other configs ──
   for dir in "$DOTFILES_DIR/.config/"*/; do
     local name; name=$(basename "$dir")
-    [[ "$name" == "quickshell" ]] && continue
-    [[ "$name" == "." ]] || [[ "$name" == ".." ]] && continue
+    [[ "$name" == "quickshell" || "$name" == "." || "$name" == ".." ]] && continue
 
-    if [[ -d "$dir" ]]; then
+    if [[ -d "$dir" && -n "$(ls -A "$dir")" ]]; then
       if [[ -d "$HOME/.config/$name" ]]; then
-        if prompt_yn "Replace existing ${BOLD}$name${RST} config?" "y"; then
+        if ask "Replace ${B}$name${R} config?" "y"; then
           rm -rf "$HOME/.config/$name"
           cp -r "$dir" "$HOME/.config/$name"
-          ok "Deployed: ${BOLD}$name${RST}"
+          ok "Deployed: $name"
         else
-          info "Skipped: ${GRAY}$name${RST}"
+          info "Skipped: $name"
         fi
       else
         cp -r "$dir" "$HOME/.config/$name"
-        ok "Deployed: ${BOLD}$name${RST}"
+        ok "Deployed: $name"
       fi
     fi
   done
 
-  # Bin scripts
+  # ── Bin scripts ──
   if [[ -d "$DOTFILES_DIR/.local/bin" ]]; then
     mkdir -p "$HOME/.local/bin"
     for f in "$DOTFILES_DIR/.local/bin/"*; do
       [[ -f "$f" ]] && cp "$f" "$HOME/.local/bin/"
     done
-    ok "Copied bin scripts (wallset, wallset-backend, etc.)"
+    find "$HOME/.local/bin" -type f -exec chmod +x {} \;
+    ok "Deployed bin scripts (wallset, wallset-backend, etc.)"
   fi
 
-  # Wlogout symlink
-  local wlogout_src=""
-  [[ -d "$SCRIPT_DIR/wlogout" ]] && wlogout_src="$SCRIPT_DIR/wlogout"
-  [[ -z "$wlogout_src" && -d "$DOTFILES_DIR/.config/wlogout" ]] && wlogout_src="$DOTFILES_DIR/.config/wlogout"
-  if [[ -n "$wlogout_src" ]]; then
+  # ── Wlogout ──
+  local ws=""
+  [[ -d "$SCRIPT_DIR/wlogout" ]] && ws="$SCRIPT_DIR/wlogout"
+  [[ -z "$ws" && -d "$DOTFILES_DIR/.config/wlogout" ]] && ws="$DOTFILES_DIR/.config/wlogout"
+  if [[ -n "$ws" ]]; then
     [[ -d "$HOME/.config/wlogout" ]] && rm -rf "$HOME/.config/wlogout"
-    ln -sf "$wlogout_src" "$HOME/.config/wlogout"
-    ok "Symlinked wlogout config"
+    ln -sf "$ws" "$HOME/.config/wlogout"
+    ok "Symlinked wlogout"
   fi
 
-  # Scripts symlink
-  local scripts_src=""
-  [[ -d "$SCRIPT_DIR/scripts" ]] && scripts_src="$SCRIPT_DIR/scripts"
-  [[ -z "$scripts_src" && -d "$DOTFILES_DIR/.config/scripts" ]] && scripts_src="$DOTFILES_DIR/.config/scripts"
-  if [[ -n "$scripts_src" ]]; then
+  # ── Scripts ──
+  local ss=""
+  [[ -d "$SCRIPT_DIR/scripts" ]] && ss="$SCRIPT_DIR/scripts"
+  [[ -z "$ss" && -d "$DOTFILES_DIR/.config/scripts" ]] && ss="$DOTFILES_DIR/.config/scripts"
+  if [[ -n "$ss" ]]; then
     [[ -d "$HOME/.config/scripts" ]] && rm -rf "$HOME/.config/scripts"
-    ln -sf "$scripts_src" "$HOME/.config/scripts"
+    ln -sf "$ss" "$HOME/.config/scripts"
+    find "$HOME/.config/scripts" -type f -exec chmod +x {} \; 2>/dev/null || true
     ok "Symlinked scripts"
   fi
 
-  # Set permissions
-  find "$HOME/.local/bin" -type f -exec chmod +x {} \; 2>/dev/null || true
-  find "$HOME/.config/scripts" -type f -exec chmod +x {} \; 2>/dev/null || true
-
-  # Wallpapers
+  # ── Wallpapers ──
   if [[ -d "$DOTFILES_DIR/.config/wallpapers" ]]; then
     mkdir -p "$HOME/.config/wallpapers"
     cp -rn "$DOTFILES_DIR/.config/wallpapers/"* "$HOME/.config/wallpapers/" 2>/dev/null
@@ -376,101 +455,86 @@ deploy_dotfiles() {
   fi
 }
 
-# ── Phase 6 — Post-install ──
-post_install() {
-  header "Phase 6/6 — Post-Install Setup"
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 6 — Post-install setup
+# ═══════════════════════════════════════════════════════════════════════════════
+step_post() {
+  title "Step 6: Post-Install Setup"
 
-  # Wallpaper thumbnails
+  # ── Wallpaper thumbnails ──
   if command -v magick &>/dev/null; then
     info "Generating wallpaper thumbnails..."
-    local thumb="$HOME/.cache/quickshell/wallpaper_picker/thumbs"
-    mkdir -p "$thumb"
+    local td="$HOME/.cache/quickshell/wallpaper_picker/thumbs"
+    mkdir -p "$td"
     for img in "$HOME/.config/wallpapers/"*; do
       [[ -f "$img" ]] || continue
-      local t="$thumb/$(basename "$img")"
-      [[ -f "$t" ]] || magick "$img" -resize 200x200^ -gravity center -extent 200x200 "$t" 2>/dev/null
+      local t="$td/$(basename "$img")"
+      [[ -f "$t" ]] && continue
+      magick "$img" -resize 200x200^ -gravity center -extent 200x200 "$t" 2>/dev/null || true
     done
-    ok "Wallpaper thumbnails generated"
+    ok "Wallpaper thumbnails ready"
   fi
 
-  # JetBrains Nerd Font
-  if [[ -d "$HOME/.local/share/fonts/JetBrainsMono" ]]; then
-    ok "JetBrains Nerd Font already installed"
-  else
+  # ── JetBrains Nerd Font ──
+  if [[ ! -d "$HOME/.local/share/fonts/JetBrainsMono" ]]; then
     info "Installing JetBrains Nerd Font..."
-    local font_dir="$HOME/.local/share/fonts/JetBrainsMono"
-    mkdir -p "$font_dir"
-
-    if wget -q -O /tmp/JetBrainsMono.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip; then
-      unzip -q -o /tmp/JetBrainsMono.zip -d "$font_dir" 2>/dev/null
-      rm /tmp/JetBrainsMono.zip
-      fc-cache -f "$font_dir" >/dev/null 2>&1 || true
+    mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
+    if wget -q -O /tmp/JBM.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip; then
+      unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null
+      rm /tmp/JBM.zip
+      fc-cache -f "$HOME/.local/share/fonts/JetBrainsMono" >/dev/null 2>&1
       ok "JetBrains Nerd Font installed"
     else
-      warn "Font download failed. Skipping."
+      warn "Font download failed (no internet?)"
     fi
-  fi
-
-  # Quickshell-overview (pre-packaged user config)
-  local overview_dst="$HOME/.config/quickshell/overview"
-  if [[ -d "$DOTFILES_DIR/.config/quickshell/overview" && ! -d "$overview_dst" ]]; then
-    info "Setting up quickshell-overview..."
-    cp -r "$DOTFILES_DIR/.config/quickshell/overview" "$overview_dst"
-    ok "quickshell-overview config deployed"
-  elif [[ -d "$overview_dst" ]]; then
-    ok "quickshell-overview already configured"
   else
-    warn "No overview config in dotfiles. Skipping."
+    ok "JetBrains Nerd Font already present"
   fi
 
-  # Auto-start in hyprland.conf
-  local hypr_conf="$HOME/.config/hypr/hyprland.conf"
-  if [[ -f "$hypr_conf" ]] && ! grep -q "quickshell" "$hypr_conf" 2>/dev/null; then
-    info "Adding quickshell auto-start to hyprland.conf..."
-    {
-      echo ""
-      echo "# Trotid Shell — Quickshell"
-      echo "exec-once = quickshell -c mrtrotid-shell &"
-    } >> "$hypr_conf"
-    ok "Auto-start added"
+  # ── quickshell-overview ──
+  if [[ -d "$DOTFILES_DIR/.config/quickshell/overview" && ! -d "$HOME/.config/quickshell/overview" ]]; then
+    mkdir -p "$HOME/.config/quickshell"
+    cp -r "$DOTFILES_DIR/.config/quickshell/overview" "$HOME/.config/quickshell/"
+    ok "quickshell-overview deployed"
   fi
 
-  # Overview auto-start (separate Quickshell instance)
-  local shconf="$HOME/.config/quickshell/shell.qml"
-  if [[ -f "$shconf" ]] && grep -q "overview" "$shconf" 2>/dev/null; then
-    ok "Overview auto-start already configured in shell.qml"
+  # ── Auto-start in hyprland.conf ──
+  local hc="$HOME/.config/hypr/hyprland.conf"
+  if [[ -f "$hc" ]] && ! grep -q "quickshell.*mrtrotid" "$hc" 2>/dev/null; then
+    if ask "Add Quickshell auto-start to hyprland.conf?" "y"; then
+      {
+        echo ""
+        echo "# Trotid Shell"
+        echo "exec-once = quickshell -c mrtrotid-shell &"
+      } >> "$hc"
+      ok "Auto-start added to hyprland.conf"
+    fi
   fi
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  RUN ALL PHASES
+#  RUN PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
-
-install_paru
-echo
-install_packages
-echo
-install_optional
-echo
-backup_configs
-echo
-deploy_dotfiles
-echo
-post_install
+step_paru
+step_packages
+step_install
+step_backup
+step_deploy
+step_post
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SUMMARY
 # ═══════════════════════════════════════════════════════════════════════════════
-header "Installation Complete"
+title "All Done!"
 
-echo -e "  ${GREEN}${BOLD}✔ Trotid Shell is ready!${RST}"
+echo -e "  ${GR}${B}✔ Trotid Shell is installed${R}"
 echo
-echo -e "  ${BOLD}Next steps:${RST}"
-echo -e "  ${GRAY}  1.${RST} Log out and select Hyprland in your display manager"
-echo -e "  ${GRAY}  2.${RST} Set wallpaper: ${CYAN}wallset${RST} ${GRAY}(or Super+W / Ctrl+Super+T)${RST}"
-echo -e "  ${GRAY}  3.${RST} View keybinds: ${CYAN}Super + /${RST}"
-echo -e "  ${GRAY}  4.${RST} Open settings: ${CYAN}Super + I${RST}"
-echo -e "  ${GRAY}  5.${RST} Update shell: ${CYAN}Settings → About → Update Shell${RST}"
+echo -e "  ${B}Next steps:${R}"
+echo -e "    ${GY}1.${R} Log out and select Hyprland in your display manager"
+echo -e "    ${GY}2.${R} Set wallpaper: ${CY}wallset${R}"
+echo -e "    ${GY}3.${R} View keybinds: ${CY}Super + /${R}"
+echo -e "    ${GY}4.${R} Open settings: ${CY}Super + I${R}"
+echo -e "    ${GY}5.${R} Update shell: ${CY}Settings → About → Update Shell${R}"
 echo
-echo -e "  ${DIM}Need help? Check AGENTS.md or visit github.com/Noro18/linux-ricing-dotfiles${RST}"
+echo -e "  ${D}Issues? github.com/Noro18/linux-ricing-dotfiles${R}"
 echo
