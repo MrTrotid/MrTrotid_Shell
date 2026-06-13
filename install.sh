@@ -311,15 +311,51 @@ step_install() {
     return 1
   fi
 
-  info "Syncing repositories..."
-  $helper -Sy --noconfirm 2>/dev/null || true
+  # ── Split into repo vs AUR packages ──
+  local KNOWN_AUR=("quickshell" "wallust" "matugen" "ghostty" "zen-browser" "visual-studio-code-bin")
+  local REPO_NEED=() AUR_NEED=()
+  local pkg
+  for pkg in "${NEED[@]}"; do
+    local is_aur=false
+    for aur in "${KNOWN_AUR[@]}"; do
+      [[ "$pkg" == "$aur" ]] && { is_aur=true; break; }
+    done
+    $is_aur && AUR_NEED+=("$pkg") || REPO_NEED+=("$pkg")
+  done
 
-  info "Installing packages via $helper (handles both repo and AUR)..."
-  if $helper -S --needed --noconfirm "${NEED[@]}"; then
-    ok "All packages installed"
-  else
-    warn "Some packages failed to install."
-    ask "Continue anyway?" "y" || return 1
+  # ── Install repo packages via pacman first (always works) ──
+  if [[ ${#REPO_NEED[@]} -gt 0 ]]; then
+    info "Installing repo packages..."
+    muted "${REPO_NEED[*]}"
+    sudo pacman -S --needed --noconfirm "${REPO_NEED[@]}" || {
+      warn "Some repo packages failed"
+      ask "Continue anyway?" "y" || return 1
+    }
+  fi
+
+  # ── Install AUR packages via helper ──
+  if [[ ${#AUR_NEED[@]} -gt 0 ]]; then
+    local helper="${AUR_HELPER:-paru}"
+    if ! command -v "$helper" &>/dev/null; then
+      fail "AUR helper ($helper) not found. Skipping AUR packages: ${AUR_NEED[*]}"
+    else
+      info "Syncing AUR helper..."
+      $helper -Sy --noconfirm || true
+      info "Installing AUR packages via $helper..."
+      muted "${AUR_NEED[*]}"
+      $helper -S --needed --noconfirm "${AUR_NEED[@]}" || {
+        warn "Some AUR packages failed"
+        ask "Continue anyway?" "y" || return 1
+      }
+    fi
+  fi
+
+  ok "Package installation complete"
+
+  # ── Verify hyprland is installed ──
+  if ! pkg_installed hyprland; then
+    warn "Hyprland was NOT installed. The compositor is required."
+    ask "Continue anyway? (you'll need to install hyprland manually)" "n" || exit 1
   fi
 }
 
@@ -474,17 +510,70 @@ step_post() {
     ok "quickshell-overview deployed"
   fi
 
-  # ── Auto-start in hyprland.conf ──
-  local hc="$HOME/.config/hypr/hyprland.conf"
-  if [[ -f "$hc" ]] && ! grep -q "quickshell.*mrtrotid" "$hc" 2>/dev/null; then
-    if ask "Add Quickshell auto-start to hyprland.conf?" "y"; then
-      {
-        echo ""
-        echo "# Trotid Shell"
-        echo "exec-once = quickshell -c mrtrotid-shell &"
-      } >> "$hc"
-      ok "Auto-start added to hyprland.conf"
+  # ── Auto-start in hyprland config ──
+  local hypr_cfg=""
+  for f in "hyprland.conf" "hyprland.lua"; do
+    [[ -f "$HOME/.config/hypr/$f" ]] && { hypr_cfg="$HOME/.config/hypr/$f"; break; }
+  done
+  if [[ -n "$hypr_cfg" ]] && ! grep -q "quickshell.*mrtrotid" "$hypr_cfg" 2>/dev/null; then
+    if ask "Add Quickshell auto-start to your Hyprland config?" "y"; then
+      if [[ "$hypr_cfg" == *.lua ]]; then
+        echo "" >> "$hypr_cfg"
+        echo "-- Trotid Shell" >> "$hypr_cfg"
+        echo "hl.exec_cmd(\"quickshell -c mrtrotid-shell &\")" >> "$hypr_cfg"
+      else
+        echo "" >> "$hypr_cfg"
+        echo "# Trotid Shell" >> "$hypr_cfg"
+        echo "exec-once = quickshell -c mrtrotid-shell &" >> "$hypr_cfg"
+      fi
+      ok "Auto-start added to $(basename "$hypr_cfg")"
     fi
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 7 — Display Manager Auto-Start
+# ═══════════════════════════════════════════════════════════════════════════════
+step_autostart() {
+  title "Step 7: Hyprland Startup"
+
+  # Detect installed display managers (in priority order)
+  local dms=()
+  systemctl is-enabled sddm.service &>/dev/null 2>&1 && dms+=("sddm")
+  systemctl is-enabled gdm.service &>/dev/null 2>&1 && dms+=("gdm")
+  systemctl is-enabled lightdm.service &>/dev/null 2>&1 && dms+=("lightdm")
+  systemctl is-enabled lxdm.service &>/dev/null 2>&1 && dms+=("lxdm")
+
+  if [[ ${#dms[@]} -eq 0 ]]; then
+    # Check if any DM is installed (but not enabled)
+    for svc in sddm.service gdm.service lightdm.service lxdm.service; do
+      systemctl list-unit-files "$svc" &>/dev/null 2>&1 && { dms+=("${svc%.service}"); break; }
+    done
+  fi
+
+  if [[ ${#dms[@]} -eq 0 ]]; then
+    warn "No display manager detected. You'll need one to start Hyprland from a login screen."
+    if ask "Install SDDM (recommended)?" "y"; then
+      sudo pacman -S --needed --noconfirm sddm && {
+        sudo systemctl enable sddm.service
+        ok "SDDM installed and enabled for auto-start"
+      }
+    fi
+    return 0
+  fi
+
+  local dm="${dms[0]}"
+  info "Detected display manager: ${B}$dm${R}"
+
+  if ask "Enable ${B}$dm${R} to start Hyprland automatically at boot?" "y"; then
+    if sudo systemctl enable "$dm.service" 2>/dev/null; then
+      ok "$dm enabled — Hyprland will appear in the session list at login"
+    else
+      warn "Failed to enable $dm"
+      ask "Continue anyway?" "y" || return 1
+    fi
+  else
+    info "Skipped. You can enable manually later: ${CY}sudo systemctl enable $dm${R}"
   fi
 }
 
@@ -497,6 +586,7 @@ step_install
 step_backup
 step_deploy
 step_post
+step_autostart
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SUMMARY
@@ -506,11 +596,11 @@ title "All Done!"
 echo -e "  ${GR}${B}✔ Trotid Shell is installed${R}"
 echo
 echo -e "  ${B}Next steps:${R}"
-echo -e "    ${GY}1.${R} Log out and select Hyprland in your display manager"
+echo -e "    ${GY}1.${R} Reboot or select Hyprland in your display manager"
 echo -e "    ${GY}2.${R} Set wallpaper: ${CY}wallset${R}"
 echo -e "    ${GY}3.${R} View keybinds: ${CY}Super + /${R}"
 echo -e "    ${GY}4.${R} Open settings: ${CY}Super + I${R}"
 echo -e "    ${GY}5.${R} Update shell: ${CY}Settings → About → Update Shell${R}"
 echo
-echo -e "  ${D}Issues? github.com/Noro18/linux-ricing-dotfiles${R}"
+echo -e "  ${D}Issues? github.com/MrTrotid/MrTrotid_Shell${R}"
 echo

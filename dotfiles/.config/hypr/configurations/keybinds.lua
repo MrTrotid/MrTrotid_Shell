@@ -75,6 +75,10 @@ hl.bind(mainMod .. " + minus", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind("CTRL + " .. mainMod .. " + left", hl.dsp.window.move({ workspace = "r-1" }))
 hl.bind("CTRL + " .. mainMod .. " + right", hl.dsp.window.move({ workspace = "r+1" }))
 
+-- === Scrolling layout navigation ===
+hl.bind(mainMod .. " + bracketleft", hl.dsp.layout("scroll l"), { description = "Scroll viewport left (scrolling layout)" })
+hl.bind(mainMod .. " + bracketright", hl.dsp.layout("scroll r"), { description = "Scroll viewport right (scrolling layout)" })
+
 -- === Special: Scratchpad ===
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("special"))
 hl.bind("CTRL + " .. mainMod .. " + S", hl.dsp.workspace.toggle_special("special"))

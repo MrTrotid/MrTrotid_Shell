@@ -73,10 +73,21 @@ hl.config({
     },
 })
 
--- Layout
+-- Layout: Dwindle (default)
 hl.config({
     dwindle = {
         preserve_split = true,
+    },
+})
+
+-- Layout: Scrolling (PaperWM-like infinite tape)
+hl.config({
+    scrolling = {
+        fullscreen_on_one_column = true,
+        column_width = 0.8,
+        direction = "right",
+        follow_focus = true,
+        wrap_focus = true,
     },
 })
 
