@@ -285,65 +285,42 @@ step_packages() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  STEP 3 — Install packages via paru
+#  STEP 3 — Install all packages via paru (handles both repo + AUR)
 # ═══════════════════════════════════════════════════════════════════════════════
 step_install() {
   title "Step 3: Installing Packages"
 
-  local NEED_INSTALL=()
-  for pkg in "${ALL_PKGS[@]}"; do
-    pkg_installed "$pkg" || NEED_INSTALL+=("$pkg")
+  local ALL_NEED=("${ALL_PKGS[@]}" "${AUR_CORE[@]}")
+  local NEED=()
+  for pkg in "${ALL_NEED[@]}"; do
+    pkg_installed "$pkg" || NEED+=("$pkg")
   done
 
-  local NEED_AUR=()
-  for pkg in "${AUR_CORE[@]}"; do
-    pkg_installed "$pkg" || NEED_AUR+=("$pkg")
-  done
-
-  if [[ ${#NEED_INSTALL[@]} -eq 0 && ${#NEED_AUR[@]} -eq 0 ]]; then
+  if [[ ${#NEED[@]} -eq 0 ]]; then
     ok "All packages already installed"
     return 0
   fi
 
-  if [[ ${#NEED_INSTALL[@]} -gt 0 ]]; then
-    echo -e "  ${GY}${#NEED_INSTALL[@]} repository packages to install:${R}"
-    muted "${NEED_INSTALL[*]}"
-    echo
-    ask "Install missing packages?" "y" || { warn "Skipping package installation"; return 0; }
+  echo -e "  ${GY}${#NEED[@]} packages to install:${R}"
+  muted "${NEED[*]}"
+  echo
+  ask "Install missing packages?" "y" || { warn "Skipping package installation"; return 0; }
 
-    info "Syncing repositories..."
-    sudo pacman -Sy --noconfirm 2>/dev/null || true
-
-    info "Installing packages..."
-    if sudo pacman -S --needed --noconfirm "${NEED_INSTALL[@]}"; then
-      ok "Repository packages installed"
-    else
-      warn "Some packages failed to install."
-      ask "Continue anyway?" "y" || return 1
-    fi
+  local helper="${AUR_HELPER:-paru}"
+  if ! command -v "$helper" &>/dev/null; then
+    fail "AUR helper ($helper) not found. Install paru first or manually."
+    return 1
   fi
 
-  if [[ ${#NEED_AUR[@]} -gt 0 ]]; then
-    echo
-    echo -e "  ${GY}${#NEED_AUR[@]} AUR packages to install:${R}"
-    muted "${NEED_AUR[*]}"
-    echo
-    ask "Install AUR packages?" "y" || { warn "Skipping AUR packages"; return 0; }
+  info "Syncing repositories..."
+  $helper -Sy --noconfirm 2>/dev/null || true
 
-    local helper="${AUR_HELPER:-paru}"
-    if ! command -v "$helper" &>/dev/null; then
-      fail "AUR helper ($helper) not found. Install manually:"
-      muted "git clone https://aur.archlinux.org/<package>.git && cd <package> && makepkg -si"
-      return 1
-    fi
-
-    info "Installing AUR packages via $helper..."
-    if $helper -S --needed --noconfirm "${NEED_AUR[@]}"; then
-      ok "AUR packages installed"
-    else
-      warn "Some AUR packages failed."
-      ask "Continue anyway?" "y" || return 1
-    fi
+  info "Installing packages via $helper (handles both repo and AUR)..."
+  if $helper -S --needed --noconfirm "${NEED[@]}"; then
+    ok "All packages installed"
+  else
+    warn "Some packages failed to install."
+    ask "Continue anyway?" "y" || return 1
   fi
 }
 
