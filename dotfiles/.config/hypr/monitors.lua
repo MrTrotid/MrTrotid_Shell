@@ -9,9 +9,9 @@ for _, m in ipairs({
 end
 
 -- Workspace assignments
-hl.workspace({ id = 1, monitor = "eDP-1", default = true, layout = "scrolling" })
+hl.workspace({ id = 1, monitor = "eDP-1", default = true })
 hl.workspace({ id = 2, monitor = "eDP-1" })
-hl.workspace({ id = 3, monitor = "eDP-1", layout = "scrolling" })
+hl.workspace({ id = 3, monitor = "eDP-1" })
 hl.workspace({ id = 4, monitor = "HDMI-A-1", default = true })
 hl.workspace({ id = 5, monitor = "HDMI-A-1" })
 hl.workspace({ id = 6, monitor = "HDMI-A-1" })
@@ -19,3 +19,4 @@ hl.workspace({ id = 7, monitor = "HDMI-A-1" })
 hl.workspace({ id = 8, monitor = "HDMI-A-1" })
 hl.workspace({ id = 9, monitor = "HDMI-A-1" })
 hl.workspace({ id = 10, monitor = "HDMI-A-1" })
+

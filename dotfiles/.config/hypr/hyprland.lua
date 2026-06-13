@@ -38,7 +38,7 @@ hl.config({
         border_size = 1,
         ["col.active_border"] = primary,
         ["col.inactive_border"] = "0xff444444",
-        layout = "dwindle",
+        layout = "scrolling",
         extend_border_grab_area = 50,
         resize_on_border = false,
     },
