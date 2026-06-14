@@ -1,6 +1,12 @@
 # Trotid Shell
 
-A modern, gesture-driven Wayland desktop shell built on Hyprland 0.55+ and Quickshell with Material You theming, singleton service architecture, and global IPC keybinds.
+![Hyprland](https://img.shields.io/badge/Hyprland-0.55%2B-8B5CF6?style=flat&logo=linux&logoColor=white)
+![Quickshell](https://img.shields.io/badge/Quickshell-0.3.0%2B-10B981?style=flat)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat)
+![Arch](https://img.shields.io/badge/Arch%20Linux-support-1793D1?style=flat&logo=arch-linux&logoColor=white)
+![Wayland](https://img.shields.io/badge/Wayland-native-FF6B6B?style=flat)
+
+A modern, gesture-driven Wayland desktop shell for Hyprland with Material You theming, singleton QML services, and live wallpaper-to-theme pipeline. Features an auto-hiding Quickshell status bar, coverflow wallpaper picker, DBus notification server with grouped toasts, emoji/GIF/clipboard pickers, workspace overview, quick actions HUD, OSD, media card, calendar with weather, and a full interactive installer for Arch-based systems.
 
 > **Disclaimer:** This is a custom desktop shell / "rice" — not a full desktop environment. It is designed for Arch-based systems with Hyprland and may require some manual setup depending on your hardware. The author is not responsible for any damage, data loss, or existential crises caused by using this configuration. Use at your own risk.
 
@@ -330,7 +336,13 @@ pkill -f "qs -c overview" && nohup qs -c overview > /dev/null 2>&1 & disown
 
 ## License
 
-This project is provided as-is. Use it, modify it, share it. If you build something cool with it, a shoutout would be nice.
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
+
+---
+
+## Contributing
+
+Contributions are welcome! See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
 
 ---
 
