@@ -20,7 +20,7 @@ done
 
 echo "$FILE" >"$LAST_FILE"
 
-killall swaybg 2>/dev/null || true
+pkill -x swaybg 2>/dev/null || true
 nohup swaybg -i "$FILE" -m fill >/dev/null 2>&1 &
 disown
 

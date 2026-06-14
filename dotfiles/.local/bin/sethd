@@ -1,1 +1,3 @@
- hyprctl keyword monitor "eDP-1,1280x720@60,auto,1"
+#!/usr/bin/env bash
+MON=$(hyprctl monitors -j 2>/dev/null | jq -r '.[0].name' 2>/dev/null || echo "eDP-1")
+hyprctl keyword monitor "$MON,1280x720@60,auto,1"

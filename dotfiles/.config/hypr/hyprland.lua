@@ -106,14 +106,14 @@ hl.curve("MySmooth", { type = "bezier", points = { {0.125, 0.706}, {0.245, 0.955
 hl.curve("smooth", { type = "bezier", points = { {0.05, 0.82}, {0.28, 0.97} } })
 
 -- Animations (from gui.conf)
-hl.animation({ leaf = "windows", enabled = true, speed = 4.0, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 4.0, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 4.0, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.0, curve = "smooth", style = "slide" })
-hl.animation({ leaf = "layers", enabled = true, speed = 8.0, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "layersIn", enabled = true, speed = 4.5, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "layersOut", enabled = true, speed = 4.0, curve = "MySmooth", style = "slide" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 4.0, curve = "default", style = "slidefade" })
+hl.animation({ leaf = "windows", enabled = true, speed = 4.0, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 4.0, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 4.0, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.0, bezier = "smooth", style = "slide" })
+hl.animation({ leaf = "layers", enabled = true, speed = 8.0, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 4.5, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 4.0, bezier = "MySmooth", style = "slide" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 4.0, bezier = "default", style = "slidefade" })
 
 -- Gestures
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })

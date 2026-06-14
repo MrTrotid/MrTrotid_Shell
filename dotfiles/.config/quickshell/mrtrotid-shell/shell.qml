@@ -1090,8 +1090,8 @@ ShellRoot {
         running: false
         command: ["sh", "-c", "pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline 2>/dev/null | tr \"\\0\" \" \" | grep -q \"overview\"' 2>/dev/null || qs -c overview"]
         onRunningChanged: {
-            if (!running && exitCode !== 0 && exitCode !== null) {
-                console.log("Failed to start quickshell-overview (exit:", exitCode, ")");
+            if (!running && overviewStartProc.exitCode !== 0 && overviewStartProc.exitCode !== null) {
+                console.log("Failed to start quickshell-overview (exit:", overviewStartProc.exitCode, ")");
             }
         }
     }

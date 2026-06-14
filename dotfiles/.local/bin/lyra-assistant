@@ -1,3 +1,8 @@
 #!/usr/bin/env bash
-
-/home/noro18/Documents/Project/Echo-Voice\ Assistant/.venv/bin/python3 /home/noro18/Documents/Project/Echo-Voice\ Assistant/src/cli.py
+echo "lyra-assistant: Set LYRA_DIR env var to your assistant project path"
+if [[ -n "$LYRA_DIR" && -f "$LYRA_DIR/src/cli.py" ]]; then
+  exec "$LYRA_DIR/.venv/bin/python3" "$LYRA_DIR/src/cli.py"
+else
+  echo "Usage: LYRA_DIR=/path/to/assistant lyra-assistant"
+  exit 1
+fi

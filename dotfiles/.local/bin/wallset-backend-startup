@@ -2,13 +2,9 @@
 
 # === Configuration ===
 WALLPAPER_DIR="$HOME/.config/wallpapers"
-MONITOR="eDP-1"
-HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
 LAST_FILE="$HOME/.cache/last_wallpaper"  # remembers last wallpaper
 CACHE="$HOME/.cache/wallpapers_list.txt" # cached list of wallpapers
 SDDM_WALLPAPER="/usr/share/wallpapers/Next/contents/images/5120x2880.png"
-
-export PATH="$HOME/anaconda3/bin:/usr/local/bin:/usr/bin:$PATH"
 
 # === Build cached file list (symlink-safe) ===
 if [ ! -f "$CACHE" ] || [ "$(find -L "$WALLPAPER_DIR" -type f | wc -l)" -ne "$(wc -l <"$CACHE")" ]; then
@@ -37,7 +33,7 @@ done
 # === Save current wallpaper as last ===
 echo "$FILE" >"$LAST_FILE"
 
-killall swaybg 2>/dev/null || true
+pkill -x swaybg 2>/dev/null || true
 nohup swaybg -i "$FILE" -m fill >/dev/null 2>&1 &
 disown
 

@@ -4,21 +4,21 @@
 hl.window_rule({
     match = { class = "^pavucontrol$" },
     float = true,
-    size = { width = 800, height = 600 },
+    size = "800 600",
     center = true,
 })
 
 hl.window_rule({
     match = { class = "^nm-connection-editor$" },
     float = true,
-    size = { width = 600, height = 400 },
+    size = "600 400",
     center = true,
 })
 
 hl.window_rule({
     match = { class = "^blueman-manager$" },
     float = true,
-    size = { width = 600, height = 400 },
+    size = "600 400",
     center = true,
 })
 
@@ -45,20 +45,17 @@ hl.window_rule({
 -- Opacity rules
 hl.window_rule({
     match = { class = "^kitty$" },
-    opacity = 0.95,
-    opacity_active = 0.90,
+    opacity = "0.95 0.90",
 })
 
 hl.window_rule({
     match = { class = "^code$" },
-    opacity = 0.95,
-    opacity_active = 0.90,
+    opacity = "0.95 0.90",
 })
 
 hl.window_rule({
     match = { class = "^firefox$" },
-    opacity = 0.95,
-    opacity_active = 0.90,
+    opacity = "0.95 0.90",
 })
 
 -- IDE tool windows (jetbrains / android-studio)

@@ -289,17 +289,23 @@ Item {
                         }
 
                         ScrollBar.horizontal: ScrollBar {
+                            id: hScrollBar
                             parent: flickable.parent
                             anchors.left: flickable.left
                             anchors.right: flickable.right
                             anchors.bottom: flickable.bottom
                             policy: flickable.contentWidth > flickable.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                            contentItem: Rectangle {
+                            contentItem: MouseArea {
+                                id: hScrollBarMa
                                 implicitHeight: 6
-                                radius: 3
-                                color: _surf3
-                                opacity: hScrollBarMa.containsMouse || parent.parent.pressed ? 0.9 : 0.5
-                                Behavior on opacity { NumberAnimation { duration: 150 } }
+                                hoverEnabled: true
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 3
+                                    color: _surf3
+                                    opacity: hScrollBarMa.containsMouse || hScrollBar.pressed ? 0.9 : 0.5
+                                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                                }
                             }
                             background: Rectangle {
                                 color: _surf1
@@ -363,7 +369,9 @@ Item {
 
                                         // Keybind rows
                                         Repeater {
+                                            id: bindsRepeater
                                             model: modelData.binds
+                                            property int bindsCount: modelData.binds.length
 
                                             delegate: ColumnLayout {
                                                 required property var modelData
@@ -441,7 +449,7 @@ Item {
                                                     maximumLineCount: 1
                                                 }
 
-                                                Item { Layout.preferredHeight: index < modelData.binds.length - 1 ? 4 : 0 }
+                                                Item { Layout.preferredHeight: index < bindsRepeater.bindsCount - 1 ? 4 : 0 }
                                             }
                                         }
 

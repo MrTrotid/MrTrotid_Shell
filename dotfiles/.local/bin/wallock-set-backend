@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 WALLPAPER_DIR="$HOME/.config/wallpapers"
-MONITOR="eDP-1"
-HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
+
 
 # Pick random image
 FILE=$1

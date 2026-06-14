@@ -710,7 +710,7 @@ step_monitors() {
       for out in "${outputs[@]}"; do
         local def="false"
         [[ $i -eq 1 ]] && def="true"
-        echo "hl.workspace({ id = $i, monitor = \"$out\", default = $def })"
+        echo "hl.workspace_rule({ workspace = \"$i\", monitor = \"$out\", default = $def })"
         i=$((i+1))
       done
     } > "$ml"

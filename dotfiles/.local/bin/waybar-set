@@ -2,8 +2,7 @@
 
 WAYBAR_DIR="$HOME/.config/waybar"
 WAYBAR_STYLES_DIR="$HOME/.config/waybar/custom styles"
-MONITOR="eDP-1"
-HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
+
 
 FILE=$1
 

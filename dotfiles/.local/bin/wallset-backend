@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 WALLPAPER_DIR="$HOME/.config/wallpapers"
-MONITOR="eDP-1"
-HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
 SDDM_WALLPAPER="/usr/share/wallpapers/Next/contents/images/5120x2880.png"
 
 # Pick random image
@@ -13,13 +11,7 @@ if [ -z "$FILE" ]; then
   exit 1
 fi
 
-export PATH="$HOME/anaconda3/bin:/usr/local/bin:/usr/bin:$PATH"
-
-# Set wallpaper and generateasdfsdf theme with Pywal
-
-#hyprctl hyprpaper preload "$FILE"
-#hyprctl hyprpaper wallpaper "$MONITOR","$FILE"
-#hyprctl hyprpaper wallpaper "HDMI-A-1","$FILE"
+# Set wallpaper
 
 # Set wallpaper
 pkill -x swaybg 2>/dev/null || true
