@@ -117,4 +117,4 @@ hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tru
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 
 -- === Shell: Restart ===
-hl.bind("CTRL + " .. mainMod .. " + R", hl.dsp.exec_cmd("pkill -x qs quickshell 2>/dev/null; quickshell -c mrtrotid-shell &"))
+hl.bind("CTRL + " .. mainMod .. " + R", hl.dsp.exec_cmd("pkill -x qs 2>/dev/null; pkill -x quickshell 2>/dev/null; quickshell -c mrtrotid-shell &"))
