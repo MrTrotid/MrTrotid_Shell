@@ -16,6 +16,7 @@ hl.env("XDG_MENU_PREFIX", "arch-")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("WLR_NO_HARDWARE_CURSORS", "1")
 hl.env("WLR_RENDERER_ALLOW_SOFTWARE", "1")
+hl.env("GTK_THEME", "Adwaita:dark")
 
 -- Input
 hl.config({

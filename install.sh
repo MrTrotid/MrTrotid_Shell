@@ -359,6 +359,12 @@ step_install() {
     if ! command -v "$helper" &>/dev/null; then
       fail "AUR helper ($helper) not found. Skipping AUR packages: ${AUR_NEED[*]}"
     else
+      # Resolve matugen-bin conflicts: remove source matugen first if installed
+      if pkg_installed matugen 2>/dev/null && [[ " ${AUR_NEED[*]} " =~ " matugen-bin " ]]; then
+        warn "Removing source matugen to avoid conflict with matugen-bin..."
+        sudo pacman -Rdd --noconfirm matugen 2>/dev/null || sudo pacman -R --noconfirm matugen 2>/dev/null || true
+      fi
+
       info "Syncing AUR helper..."
       $helper -Sy --noconfirm || true
       info "Installing AUR packages via $helper..."
@@ -485,6 +491,18 @@ step_deploy() {
     cp -rn "$DOTFILES_DIR/.config/wallpapers/"* "$HOME/.config/wallpapers/" 2>/dev/null
     ok "Copied wallpapers"
   fi
+
+  # ── Prefer Lua config over Hyprlang .conf ──
+  if [[ -f "$HOME/.config/hypr/hyprland.lua" && -f "$HOME/.config/hypr/hyprland.conf" ]]; then
+    info "Both hyprland.lua and hyprland.conf exist. Hyprland will prefer .conf."
+    if ask "Remove hyprland.conf to use the Lua config (recommended)?"; then
+      rm "$HOME/.config/hypr/hyprland.conf"
+      ok "Removed hyprland.conf — Lua config will be used"
+    else
+      warn "Keeping both. Rename .conf manually if Lua doesn't load:"
+      warn "  mv ~/.config/hypr/hyprland.conf ~/.config/hypr/hyprland.conf.bak"
+    fi
+  fi
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -508,19 +526,42 @@ step_post() {
   fi
 
   # ── JetBrains Nerd Font ──
-  if [[ ! -d "$HOME/.local/share/fonts/JetBrainsMono" ]]; then
+  if fc-list | grep -qi "JetBrainsMonoNerd" &>/dev/null; then
+    ok "JetBrains Nerd Font already installed"
+  else
     info "Installing JetBrains Nerd Font..."
     mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
-    if wget -q -O /tmp/JBM.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip; then
-      unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null
-      rm /tmp/JBM.zip
-      fc-cache -f "$HOME/.local/share/fonts/JetBrainsMono" >/dev/null 2>&1
+
+    local JBM_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+    if command -v curl &>/dev/null; then
+      curl -LfsS -o /tmp/JBM.zip "$JBM_URL" 2>/dev/null
+    else
+      wget -q -O /tmp/JBM.zip "$JBM_URL" 2>/dev/null
+    fi
+
+    if [[ -f /tmp/JBM.zip ]] && unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null; then
+      rm -f /tmp/JBM.zip
+      fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1
       ok "JetBrains Nerd Font installed"
     else
-      warn "Font download failed (no internet?)"
+      warn "Font download failed. Trying fallback URL..."
+      rm -f /tmp/JBM.zip
+      # Fallback: use specific version tag
+      local JBM_URL_FALLBACK="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/JetBrainsMono.zip"
+      if command -v curl &>/dev/null; then
+        curl -LfsS -o /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
+      else
+        wget -q -O /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
+      fi
+      if [[ -f /tmp/JBM.zip ]] && unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null; then
+        rm -f /tmp/JBM.zip
+        fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1
+        ok "JetBrains Nerd Font installed (fallback URL)"
+      else
+        warn "Font download failed entirely. Install manually:"
+        warn "  ${B}https://www.nerdfonts.com/font-downloads${R}"
+      fi
     fi
-  else
-    ok "JetBrains Nerd Font already present"
   fi
 
   # ── quickshell-overview ──
