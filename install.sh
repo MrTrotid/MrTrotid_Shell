@@ -223,7 +223,7 @@ CORE_PKGS=(
 AUR_CORE=(
   quickshell
   wallust
-  matugen
+  matugen-bin
 )
 
 EXTRA_PKGS=(
@@ -332,7 +332,7 @@ step_install() {
   fi
 
   # ── Split into repo vs AUR packages ──
-  local KNOWN_AUR=("quickshell" "wallust" "matugen" "ghostty" "zen-browser" "visual-studio-code-bin")
+  local KNOWN_AUR=("quickshell" "wallust" "matugen-bin" "ghostty" "zen-browser" "visual-studio-code-bin")
   local REPO_NEED=() AUR_NEED=()
   local pkg
   for pkg in "${NEED[@]}"; do
