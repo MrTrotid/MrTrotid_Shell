@@ -76,7 +76,7 @@ Super + I                  # Open settings panel
 
 ## Configuration Locations
 - Hyprland: `dotfiles/.config/hypr/hyprland.conf` (main entry)
-- Quickshell: `~/.config/quickshell/mrtrotid-shell/` (symlink to `~/Desktop/Trotid_Shell/quickshell/`)
+- Quickshell: `~/.config/quickshell/mrtrotid-shell/` (symlink to `~/Desktop/MrTrotid_Shell/dotfiles/.config/quickshell/mrtrotid-shell/`)
 - Quickshell (custom): `~/.config/quickshell/custom/` (same symlink target)
 - Rofi: Launchers in `dotfiles/.config/rofi/launchers/`, applets in `applets/`
 - Kitty: `dotfiles/.config/kitty/kitty.conf` (references wallust cache)
@@ -91,7 +91,7 @@ Super + I                  # Open settings panel
 5. All components update live via singleton service bindings
 
 ## Quickshell Config Structure
-All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.config/quickshell/{custom,mrtrotid-shell}`):
+All config lives at `~/Desktop/MrTrotid_Shell/dotfiles/.config/quickshell/mrtrotid-shell/` (symlinked to `~/.config/quickshell/mrtrotid-shell/`):
 
 - `shell.qml` - **Single entry point**: Each component runs in its own Wayland layer shell surface:
   - `PanelWindow (main)` - Bar (exclusiveZone: 34, Top layer)
@@ -283,6 +283,46 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + Shift + C` | Color picker (hyprpicker) | exec |
 | `Ctrl + Shift + R` | Region recording | exec |
 | `Ctrl + Alt + R` | Full recording | exec |
+
+## Changelog (Recent Fixes)
+
+### Cross-Machine Compatibility
+- **GPU group check**: Script verifies user belongs to `video`/`render` groups at start; adds them if missing (fixes `DRM_IOCTL_MODE_CREATE_DUMB failed: Permission denied`)
+- **VM detection**: `systemd-detect-virt` with per-VM DRM fallbacks (VirtualBox → `Virtual1`, QEMU/KVM → `Virtual-1`, VMware → `Virtual1`, Hyper-V → `Virtual-1`)
+- **Monitor auto-generation**: `step_monitors` generates `monitors.lua` + `monitors.conf` from `/sys/class/drm/card*-*/status`; non-interactive
+- **Package failure tracking**: `FAILED_PKGS=()` array; failed repo + AUR packages tracked individually; styled "Failed Packages" box at end
+
+### Quickshell Config
+- **Restructured**: All QML files moved from `quickshell/` to `quickshell/mrtrotid-shell/` subdirectory so `quickshell -c mrtrotid-shell` resolves correctly
+- **Overview config**: Stays at `quickshell/overview/` (separate qs instance)
+
+### QML Fixes
+- **Cheatsheet.qml:444**: `modelData.binds.length` → `bindsRepeater.bindsCount` (bind entries don't have `.binds`)
+- **Cheatsheet.qml:301**: `hScrollBarMa` was referenced but never defined — wrapped scrollbar content in MouseArea
+- **shell.qml:1093**: `exitCode` scope in `onRunningChanged` → `overviewStartProc.exitCode`
+
+### Hyprland Lua API Fixes (0.55+)
+- `hl.animation({ curve = "X" })` → `hl.animation({ bezier = "X" })` (`curve` field is silently ignored)
+- `hl.dsp.togglefloating()` → `hl.dsp.window.float()` (no such namespace method)
+- `hl.workspace({ id = N })` → `hl.workspace_rule({ workspace = "N" })` (`hl.workspace` does not exist)
+- `size = {width=800,height=600}` → `size = "800 600"` (window rule effect uses space-separated string)
+- `opacity_active` removed, merged into `opacity = "0.95 0.90"` (no such field)
+
+### Scripts Cleaned
+- `wallset-backend`, `wallset-backend-startup`, `colorscheme-backend`: removed `anaconda3/bin` PATH pollution
+- `wallset-backend`, `wallset-backend-startup`, `wallock-set-backend`, `waybar-set`: removed `MONITOR="eDP-1"` hardcode (unused/swaybg uses auto-detect)
+- `start-waybar`, `wallset-dark-backend-startup`: `killall` → `pkill -x`
+- `colorscheme-backend`: removed `/home/noro18/anaconda3/bin/wal` and `/home/noro18/.cargo/bin/matugen` hardcoded paths
+- `lyra-assistant`: now uses `$LYRA_DIR` env var instead of `/home/noro18` hardcoded path
+- `setfhd`/`sethd`: auto-detect monitor name via `hyprctl monitors -j | jq -r '.[0].name'`
+
+### Installer Fixes
+- `step_backup` moved before `step_install` in pipeline
+- `| tail -5` pipeline masking replaced with `spinner` + `wait` (preserves makepkg exit code)
+- `killall qs quickshell` → `pkill -x qs; pkill -x quickshell` in keybinds
+- `curl`/`wget` font download: added `--connect-timeout 30 --max-time 120` / `--timeout=30`
+- Removed `$helper -Sy --noconfirm` partial-sync line
+- `local` keyword removed from external-scope variables in functions
 
 ## Verification
 - Check if changes survived wallpaper switch: Run `wallset`

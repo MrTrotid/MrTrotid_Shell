@@ -1,7 +1,7 @@
 # Scripts - Helper Scripts Reference
 
 ## Purpose
-Shell scripts for screenshots, screen recording, clipboard history, and notifications. All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell/scripts/`).
+Shell scripts for screenshots, screen recording, clipboard history, and notifications. All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/MrTrotid_Shell/scripts/`).
 
 ## Scripts Directory Structure
 ```

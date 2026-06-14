@@ -1,224 +1,337 @@
 # Trotid Shell
 
-A custom Hyprland + Quickshell desktop shell with singleton service architecture, global IPC keybinds, Material You theming, Lua-based Hyprland config, and unified cheatsheet generation.
+A modern, gesture-driven Wayland desktop shell built on Hyprland 0.55+ and Quickshell with Material You theming, singleton service architecture, and global IPC keybinds.
 
-## Quick Start
+> **Disclaimer:** This is a custom desktop shell / "rice" — not a full desktop environment. It is designed for Arch-based systems with Hyprland and may require some manual setup depending on your hardware. The author is not responsible for any damage, data loss, or existential crises caused by using this configuration. Use at your own risk.
 
-```bash
-# Clone and install (Arch-based systems)
-git clone https://github.com/MrTrotid/MrTrotid_Shell ~/Desktop/MrTrotid_Shell
-cd ~/Desktop/MrTrotid_Shell
-chmod +x install.sh && ./install.sh
-```
+> **Note on Wayland:** This shell targets native Wayland compositors only (Hyprland). X11/XWayland fallbacks may work but are not tested or supported.
 
-The installer handles everything:
-- Installs **paru** (AUR helper) from `paru-bin`
-- Interactive TUI for choosing terminal, browser, editor, file manager, extras
-- Installs ALL packages (repo + AUR) through paru in one pass
-- Backs up existing configs, deploys dotfiles, runs post-setup (GTK themes, fonts, services)
+---
 
-```bash
-# After logging into Hyprland:
-wallset                    # Set wallpaper (triggers theming pipeline)
-Super + /                  # View keybind cheatsheet
-Super + I                  # Open settings panel
-```
+## Design Philosophy
 
-**Prerequisites:** Arch-based Linux (pacman). Everything else is handled by the installer.
+- **Material You** — Colors generated from wallpaper using matugen (Material 3). Every UI element picks up the palette live, no manual color picking.
+- **Keyboard-first** — Everything has a keybind. Super + / opens a searchable cheatsheet. No mouse required unless you want one.
+- **Service-oriented** — Singleton QML services handle audio, brightness, network, battery, system monitoring, notifications, and theming. Popups are isolated PanelWindows with mutual exclusion.
+- **Gesture-driven** — Bar auto-hides, popups slide/fade in, media card slides from the right, quick actions HUD slides from the bottom.
+- **Live theme** — Change wallpaper and every themed element updates in real time via 2-second color polling.
+- **Cross-machine** — Auto-detects monitors, GPU devices, VM vs physical hardware at install time.
+
+---
 
 ## What's Included
 
-- **Hyprland 0.55+** with Lua config syntax, scroll layout, gestures, layerrules
-- **Quickshell** - singleton services, global IPC, Wayland layer shell
-- **Material You** color scheme via matugen (auto-generates M3 colors from wallpaper)
-- **Notification system** with DBus server, grouped notifications, toasts, action buttons, urgency styling, persistence
-- **Coverflow wallpaper picker** with thumbnails and filter bar
-- **Quick Actions HUD** with keyboard navigation and executable actions
-- **OSD** for volume/brightness/mic feedback
-- **Cheatsheet** - searchable keybind reference with executable actions
-- **Clipboard manager** - native Quickshell widget with cliphist integration, search/filter, image preview
-- **Emoji picker** - native Quickshell widget with 5 categories, search, click to copy
-- **GIF selector** - native Quickshell widget with Tenor API search (plays on hover)
-- **Night light toggle** via hyprsunset
-- **Settings panel** - floating centered panel with General/About sections, Update Shell (auto-detects git repo), system info (OS, kernel, GPU, CPU, memory)
-- **Camera privacy indicator** - polls `/dev/video0` via `fuser` every 3s
-- **Power menu** - wlogout with HyprNova-style icon buttons
-- **CPU temperature chip** - color-coded (green/yellow/red) in bar
-- **Network speed indicator** - ↓/↑ KB/s or MB/s
-- **Low battery notification** - warns at configurable threshold (default 20%)
-- **Workspace overview** - visual overview with live previews (Super+Tab)
+| Feature | Description |
+|---------|-------------|
+| **Hyprland Lua config** | Full Lua-based config with modular `dofile()` includes |
+| **Quickshell bar** | Auto-hiding top bar with workspaces, clock, system tray |
+| **Notification system** | DBus server, grouped notifications, toast queue, persistence, action buttons |
+| **Coverflow wallpaper picker** | Full-screen carousel with filter bar, thumbnails, live apply |
+| **Quick Actions HUD** | Screenshot/recording shortcuts with keyboard navigation |
+| **OSD** | Volume/brightness feedback with auto-hide |
+| **Cheatsheet** | Searchable keybind reference with executable actions |
+| **Clipboard manager** | cliphist integration with search and image preview |
+| **Emoji picker** | 5 categories, search, click-to-copy |
+| **GIF picker** | Tenor API search with hover preview |
+| **Settings panel** | General settings + About tab with live update shell |
+| **Workspace overview** | Visual workspace switcher with live previews |
+| **Media card** | MPRIS player info, slides from right |
+| **Calendar + Weather** | Click clock for calendar + weather popup |
+| **Camera privacy** | Live indicator when `/dev/video0` is in use |
+| **Night light** | hyprsunset toggle (Super + Shift + N) |
+| **Power menu** | wlogout overlay with icon buttons |
+| **CPU temperature** | Color-coded chip in bar (green/yellow/red) |
+| **Network speed** | ↓/↑ KB/s or MB/s next to WiFi icon |
+| **Battery warnings** | Low battery notification at configurable threshold |
+| **Wallpaper theming** | wallust + matugen generate colors from wallpaper live |
+| **Screenshots** | grim + slurp with multiple modes and annotation |
+| **Screen recording** | wf-recorder with rofi audio picker |
 
-## Quick Reference
+---
+
+## Keybinds
 
 | Key | Action |
 |-----|--------|
 | `Super + Return` | Terminal (Ghostty) |
 | `Super + Space` | App launcher (Rofi) |
-| `Super + /` | Toggle Cheatsheet |
-| `Super + P` | Toggle power menu (wlogout) |
-| `Super + A` | Toggle notification panel |
-| `Super + J` | Toggle quick actions HUD |
+| `Super + /` | Cheatsheet |
+| `Super + P` | Power menu |
+| `Super + A` | Notification panel |
+| `Super + J` | Quick actions HUD |
 | `Super + O` | Toggle bar |
 | `Super + M` | Toggle media card |
-| `Ctrl + Super + T` | Toggle wallpaper picker |
-| `Super + I` | Toggle settings panel |
-| `Super + V` | Toggle clipboard manager |
-| `Super + .` | Toggle emoji picker |
-| `Super + ,` | Toggle GIF picker |
-| `Super + Tab` | Toggle workspace overview |
+| `Ctrl + Super + T` | Wallpaper picker |
+| `Super + I` | Settings panel |
+| `Super + V` | Clipboard manager |
+| `Super + .` | Emoji picker |
+| `Super + ,` | GIF picker |
+| `Super + Tab` | Workspace overview |
 | `Super + W` | Browser (Zen) |
 | `Super + E` | File manager (Thunar) |
-| `Super + Shift + N` | Toggle night light |
+| `Super + Q` | Close window |
+| `Super + F` | Fullscreen |
+| `Super + G` | Toggle floating |
+| `Super + S` | Scratchpad |
+| `Super + 1-0` | Switch workspace |
+| `Super + Shift + 1-0` | Move window to workspace |
+| `Super + Shift + N` | Night light |
 | `Super + Shift + P` | Lock screen |
 | `Super + Shift + L` | Suspend |
 | `Ctrl + Super + R` | Restart Quickshell |
-| `Print/Ctrl/Shift/Alt + Print` | Screenshot modes |
-| `Ctrl + Shift + R` | Region record / stop |
-| `Ctrl + Alt + R` | Full record / stop |
+| `Print` | Full screenshot |
+| `Ctrl + Print` | Region screenshot |
+| `Shift + Print` | Window screenshot |
+| `Ctrl + Shift + Print` | Annotate screenshot |
+| `Ctrl + Shift + R` | Region recording |
+| `Ctrl + Alt + R` | Full recording |
+| `Super + Shift + C` | Color picker |
 
-Full keybind list: see `hypr/configurations/keybinds.lua` or press `Super + /` in-shell.
+Full list in `dotfiles/.config/hypr/configurations/keybinds.lua` or press `Super + /`.
 
-## Requirements
+---
 
-| Component | Notes |
-|-----------|-------|
-| Hyprland 0.55+ | Lua config syntax |
-| Quickshell 0.3.0+ | AUR via paru |
-| matugen + wallust | Material You + terminal colors |
-| Qt 6 | Quickshell dependency |
-| swaybg | wallpaper setter |
+## Installation
 
-**Install helper:** `wl-clipboard`, `cliphist`, `playerctl`, `wpctl`, `brightnessctl`, `grim`, `slurp`, `hyprpicker`, `swappy`, `wf-recorder`, `rofi`, `ImageMagick`, `xdg-desktop-portal-hyprland` — all handled by the installer.
+### Requirements
+- Arch-based Linux distribution (pacman)
+- Hyprland 0.55+
+- An active internet connection
+
+### Fresh Install
+
+```bash
+git clone https://github.com/MrTrotid/MrTrotid_Shell ~/Desktop/MrTrotid_Shell
+cd ~/Desktop/MrTrotid_Shell
+chmod +x install.sh && ./install.sh
+```
+
+The installer is fully interactive:
+1. **AUR Helper** — Installs paru (or detects existing yay/paru)
+2. **Package Selection** — Choose terminal, browser, editor, file manager
+3. **Backup** — Existing configs saved to `~/.config.bak-<timestamp>/`
+4. **Install** — All repo + AUR packages in one pass, tracks failures
+5. **Deploy** — Dotfiles, symlinks, bin scripts, wallpapers
+6. **Post-Setup** — Generates wallpaper thumbnails, installs JetBrains Nerd Font
+7. **Monitor Config** — Auto-detects connected displays + VM detection
+8. **Display Manager** — Optionally enables SDDM/GDM/LightDM
+
+### Post-Install
+
+```bash
+# Log out and into Hyprland, then:
+wallset                    # Set initial wallpaper (triggers theming)
+Super + /                  # Open cheatsheet
+Super + I                  # Open settings
+```
+
+### Updating
+
+From the Settings panel (Super + I → About tab → Update Shell):
+1. Click **Check Updates** to see commits behind
+2. Click **Update Now** to pull latest
+3. Click **Restart Shell** to apply
+
+Or manually:
+```bash
+cd ~/Desktop/MrTrotid_Shell && git pull
+```
+
+---
+
+## Architecture
+
+```
+Hyprland (compositor)
+├── hyprland.lua           # Main Lua config
+├── configurations/keybinds.lua  # All keybinds (single file)
+├── monitors.lua           # Auto-generated monitor config
+├── windowrules.lua        # Window/layer rules
+└── colors/colors.lua      # Color variables
+
+Quickshell (desktop shell)
+└── mrtrotid-shell/
+    ├── shell.qml           # Entry point — all PanelWindows
+    ├── BarContent.qml      # Status bar
+    ├── services/           # Singleton services
+    │   ├── ShellState.qml  # Popup state management
+    │   ├── AudioService.qml
+    │   ├── BrightnessService.qml
+    │   ├── VolumeService.qml
+    │   ├── NetworkService.qml
+    │   ├── BatteryService.qml
+    │   ├── SystemService.qml
+    │   ├── NotificationService.qml
+    │   └── ColorService.qml
+    └── widgets/            # Popup widgets
+        ├── Cheatsheet.qml
+        ├── ClipboardManager.qml
+        ├── EmojiPicker.qml
+        ├── GifPicker.qml
+        ├── MediaCard.qml
+        ├── NotificationPanel.qml
+        ├── NotificationPopup.qml
+        ├── OsdPopup.qml
+        ├── QuickActions.qml
+        ├── SettingsPopup.qml
+        ├── WallpaperPicker.qml
+        └── ...
+
+Overview (workspace switcher)
+└── ~/.config/quickshell/overview/   # Config override
+```
+
+### Theme Pipeline
+
+```
+1. Wallpaper set → wallset-backend
+2. swaybg applies wallpaper
+3. wallust generates terminal colors (Kitty, Hyprland)
+4. matugen generates Material You colors (colors.json)
+5. ColorService polls colors.json every 2s
+6. All QML components update via property bindings
+```
+
+### Key Design Decisions
+
+- **Lua config over hyprlang** — hyprland.lua is the primary config; hyprland.conf is auto-removed if both exist
+- **Each popup is its own PanelWindow** with `exclusiveZone: 0`
+- **Singleton services** with `pragma Singleton` — registered in `qmldir`
+- **activePopup pattern** — only one popup visible at a time
+- **Global IPC** — keybinds trigger shell actions via `global, quickshell:<action>`
+- **Process + cat for ColorService** — FileView doesn't detect atomic file rewrites
+- **pkill -x over killall** — killall matches partial names, causing collateral damage
+- **VM detection** — monitor config auto-detects VM type and generates appropriate fallback
+- **GPU group check** — script verifies user is in `video`/`render` groups for DRM access
+
+---
 
 ## Project Structure
 
 ```
-Trotid_Shell/
-├── hypr/                              # Hyprland configuration (Lua)
-│   ├── hyprland.lua                   # Main entry — env, input, general, decoration,
-│   │                                  #   animations, gestures, autostart
-│   ├── monitors.lua                   # Monitor specs + workspace assignments
-│   ├── colors/colors.lua              # Material You color variable globals
-│   ├── configurations/keybinds.lua    # All keybindings (single file for cheatsheet)
-│   └── windowrules.lua                # Window rules + layer rules
-├── quickshell/                        # Quickshell configuration
-│   ├── shell.qml                      # Root — all PanelWindows + GlobalShortcuts
-│   ├── BarContent.qml                 # Bar layout (binds to singleton services)
-│   ├── core/
-│   │   └── NotificationUtils.js       # Time formatting and icon mapping
-│   ├── services/                      # Singleton services (pragma Singleton + qmldir)
-│   │   ├── ShellState.qml             # UI toggle states (activePopup pattern)
-│   │   ├── AudioService.qml           # wpctl parsing, sink switching, mic
-│   │   ├── BrightnessService.qml      # Brightness polling + control
-│   │   ├── VolumeService.qml          # Volume from AudioService
-│   │   ├── NetworkService.qml         # nmcli monitoring + speed from /proc
-│   │   ├── BatteryService.qml         # UPower + sysfs
-│   │   ├── SystemService.qml          # CPU + memory + temp from /proc
-│   │   ├── NotificationService.qml    # DBus notification server
-│   │   ├── ColorService.qml           # matugen colors.json reader
-│   │   └── qmldir                     # Singleton declarations
-│   ├── widgets/                       # Popup widgets
-│   │   ├── BluetoothSelector.qml
-│   │   ├── WifiSelector.qml
-│   │   ├── CalendarPopup.qml
-│   │   ├── NotificationPanel.qml      # Grouped notifications
-│   │   ├── NotificationPopup.qml      # Toast notifications (ListModel, max 3)
-│   │   ├── WallpaperPicker.qml        # Coverflow carousel with thumbnails
-│   │   ├── QuickActions.qml           # Bottom-center floating action bar
-│   │   ├── Cheatsheet.qml             # Searchable keybind reference
-│   │   ├── OsdPopup.qml               # Volume/brightness OSD
-│   │   ├── ClipboardManager.qml       # cliphist integration
-│   │   ├── EmojiPicker.qml            # 5 categories, search, copy
-│   │   ├── GifPicker.qml              # Tenor API search
-│   │   ├── PowerMenu.qml              # Centered power overlay
-│   │   ├── MediaCard.qml
-│   │   ├── PlayerCard.qml
-│   │   ├── SettingsPopup.qml          # Settings panel with Update Shell
-│   │   └── WaveVisualizer.qml
-│   ├── calendar/                      # Weather scripts + .env config
-│   └── functions/
-│       └── ColorUtils.qml             # Color utilities
-├── scripts/                           # Helper scripts (symlinked to ~/.config/scripts)
-├── wlogout/                           # wlogout power menu layout
-├── dotfiles/.config/                  # Deployable config files
-├── install.sh                         # Interactive TUI installer
-├── reload.sh                          # Quick reload helper
-└── start-trotid.sh                    # Launch script for testing
+MrTrotid_Shell/
+├── install.sh                       # Interactive installer
+├── reload.sh                        # Quickshell hot-reload
+├── start-trotid.sh                  # Hyprland test launch
+├── AGENTS.md                        # AI/agent guidance
+├── dotfiles/
+│   └── .config/
+│       ├── hypr/                    # Hyprland config (Lua)
+│       │   ├── hyprland.lua
+│       │   ├── monitors.lua
+│       │   ├── windowrules.lua
+│       │   ├── colors/
+│       │   └── configurations/
+│       ├── quickshell/
+│       │   ├── mrtrotid-shell/      # Main shell QML
+│       │   └── overview/            # Workspace overview override
+│       ├── rofi/                    # Launchers + applets
+│       ├── kitty/                   # Terminal config
+│       ├── wallpapers/              # Wallpaper images
+│       └── local/bin/               # Scripts (wallset, etc.)
+├── scripts/                         # Screenshot, recording helpers
+├── wlogout/                         # Power menu layout
+└── docs/
+    ├── architecture.md
+    ├── file-structure.md
+    ├── keybinds.md
+    ├── scripts.md
+    ├── theming-pipeline.md
+    ├── services/                    # Per-service documentation
+    └── components/                  # Per-component documentation
 ```
 
-## Services
+---
 
-All services live in `quickshell/services/` with `pragma Singleton` + `qmldir` entry.
+## Requirements
 
-| Service | Description |
-|---------|-------------|
-| ShellState | UI toggle states (activePopup mutual exclusion) |
-| ColorService | Reads matugen colors.json via Process + cat (2s polling) |
-| AudioService | wpctl parsing, sink switching, Bluetooth auto-switch, mic parsing |
-| BrightnessService | Brightness polling (200ms) + control |
-| VolumeService | Volume from AudioService, debounced refresh |
-| NetworkService | nmcli monitoring with SSID escaping, /proc/net/dev speed |
-| BatteryService | UPower + sysfs, hasBattery guard, low battery notification |
-| SystemService | CPU + memory + temperature from /proc (2s poll) |
-| NotificationService | DBus notification server, grouped, toasts, persistence |
+| Component | Min Version | Notes |
+|-----------|-------------|-------|
+| Hyprland | 0.55+ | Lua config syntax required |
+| Quickshell | 0.3.0 | AUR (paru handles this) |
+| matugen | latest | Material You color generation |
+| wallust | latest | Terminal color generation |
+| Qt 6 | 6.5+ | Quickshell dependency |
+| swaybg | latest | Wallpaper setter |
 
-## Architecture
+Other dependencies installed automatically: `wl-clipboard`, `cliphist`, `playerctl`, `brightnessctl`, `grim`, `slurp`, `hyprpicker`, `swappy`, `wf-recorder`, `rofi`, `ImageMagick`, `jq`, `polkit-kde-agent`, `gnome-keyring`, `pipewire`, `wireplumber`, `hypridle`, `hyprlock`, `hyprsunset`.
 
-- **Hyprland config in Lua** (`hyprland.lua`) — all settings via `hl.config()`, `hl.bind()`, `hl.window_rule()`, `hl.animation()`, etc. Modular via `dofile()` for monitors, keybinds, colors, window rules
-- **Each popup is its own PanelWindow** with `exclusiveZone: 0`
-- **Popup click-outside-to-close** via cursor position monitoring
-- **Global IPC** for shell toggles (`global, quickshell:<action>`)
-- **Single NotificationServer** in NotificationService singleton
-- **ColorService** reads matugen JSON via Process + cat (2s polling) — FileView doesn't detect atomic rewrites
-- **Wallpaper restore** on startup from cached current_wallpaper.png
-- **Hypridle** — Screen dim 7.5min, lock 10min, screen off + suspend 30min
+---
+
+## Changes from Upstream
+
+This shell is a fork/evolution of [Noro18/linux-ricing-dotfiles](https://github.com/Noro18/linux-ricing-dotfiles). Key changes:
+
+- **Lua-first**: Fully ported from hyprlang to Lua API. hyprland.conf is deprecated and auto-removed.
+- **Cross-machine**: Installer auto-detects monitors, GPU groups, VM type. No more hardcoded eDP-1+HDMI-A-1.
+- **Cleaner scripts**: Removed `kill -USR1` for ghostty (crashed terminals), removed killall (uses pkill -x), removed developer home paths.
+- **Fixed QML errors**: `ReferenceError` bugs in Cheatsheet (modelData.binds, hScrollBarMa) and shell.qml (exitCode) fixed.
+- **Structured quickshell**: Config now lives in `mrtrotid-shell/` subdirectory to match quickshell's `-c` convention.
+- **Package tracking**: Failed packages are reported at the end of install instead of silent failure.
+- **VM support**: systemd-detect-virt + per-VM monitor fallbacks (VirtualBox, QEMU/KVM, VMware, Hyper-V).
+- **Hyprland API correctness**: `hl.workspace()` → `hl.workspace_rule()`, `hl.dsp.togglefloating()` → `hl.dsp.window.float()`, `curve` → `bezier` in animation specs, `{800,600}` → `"800 600"` in window rules.
+
+---
 
 ## Troubleshooting
 
-**Hyprland won't start:**
+### Quickshell won't start
 ```bash
-# Check config errors
-hyprctl configerrors
+# Check the config path resolves correctly
+quickshell -c mrtrotid-shell -v
 
-# Test Lua config syntax
-lua ~/.config/hypr/hyprland.lua
-```
-
-**Quickshell won't start:**
-```bash
-quickshell -c ~/Desktop/Trotid_Shell/quickshell/ 2>&1
-```
-
-**Reload config:**
-```bash
-pkill -x qs && quickshell -c ~/Desktop/Trotid_Shell/quickshell/ &
-```
-
-**Colors not updating:**
-- ColorService uses `Process` + `cat` to read `colors.json` every 2s
-- Requires `import Quickshell` (not just `Quickshell.Io`) for `Quickshell.env("HOME")`
-- Missing import causes `ReferenceError: Quickshell is not defined`
-- Check logs: `quickshell -c mrtrotid-shell log | grep -i color`
-
-**Wallpaper picker not applying:**
-- Uses `$HOME/.local/bin/wallset-backend` (full path required for execDetached)
-- wallpaper picker runs swaybg, wallust, matugen, pywal_cava, lock screen bg copy
-- If picker freezes, check `sudo -n true` (SDDM copy needs sudo)
-
-**Check logs:**
-```bash
+# Check logs
 journalctl --user -u quickshell -f
 quickshell -c mrtrotid-shell log
 ```
 
+### Hyprland config errors
+```bash
+hyprctl configerrors
+lua ~/.config/hypr/hyprland.lua
+```
+
+### Colors not updating
+```bash
+# Ensure matugen is installed and colors.json exists
+ls -la ~/.cache/quickshell/colors.json
+
+# Check ColorService polling
+quickshell -c mrtrotid-shell log | grep -i color
+```
+
+### Wallpaper picker not applying
+- Uses `$HOME/.local/bin/wallset-backend` (full path required for execDetached)
+- If picker freezes, check `sudo -n true` (wallset-backend tries sudo for SDDM copy)
+
+### Overview not responding
+```bash
+pkill -f "qs -c overview" && nohup qs -c overview > /dev/null 2>&1 & disown
+```
+
+---
+
 ## Credits
 
-- **Calendar, Bluetooth, WiFi popups** — inspired by ilyamiro/nixos-configuration
+- **Compositor** — [Hyprland](https://hyprland.org/)
+- **QML Framework** — [Quickshell](https://github.com/outfoxxed/quickshell)
+- **Original dotfiles** — [Noro18/linux-ricing-dotfiles](https://github.com/Noro18/linux-ricing-dotfiles)
+- **Material You Colors** — [matugen](https://github.com/InioX/matugen) by InioX
+- **Terminal Colors** — [wallust](https://github.com/explosion-mental/wallust)
+- **Workspace Overview** — [quickshell-overview](https://github.com/Shanu-Kumawat/quickshell-overview) by Shanu-Kumawat
+- **Calendar, Bluetooth, WiFi popups** — inspired by [ilyamiro/nixos-configuration](https://github.com/ilyamiro/nixos-configuration)
 - **Notification panel** — inspired by nandoroid
 - **Coverflow wallpaper picker** — inspired by ilyamiro's wallpaper carousel
 - **GIF search** — Tenor API (Google)
-- **Compositor** — Hyprland
-- **QML framework** — Quickshell
-- **Material You color generation** — matugen
-- **Rofi themes** — adi1090x/rofi
-- **Workspace overview** — quickshell-overview by Shanu-Kumawat
+- **Rofi themes** — [adi1090x/rofi](https://github.com/adi1090x/rofi)
+- **Nerd Font** — [ryanoasis/nerd-fonts](https://github.com/ryanoasis/nerd-fonts)
+
+---
+
+## License
+
+This project is provided as-is. Use it, modify it, share it. If you build something cool with it, a shoutout would be nice.
+
+---
+
+*Made with way too much caffeine and an unhealthy obsession with pixel-perfect theming.*

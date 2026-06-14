@@ -4,7 +4,7 @@
 Trotid Shell is a Wayland desktop shell built on Quickshell, providing a status bar, notification system, popups, and wallpaper management for Hyprland. It uses a singleton service architecture with Material You theming via matugen.
 
 ## Source Location
-All source lives at `~/Desktop/Trotid_Shell/quickshell/`, symlinked to `~/.config/quickshell/mrtrotid-shell/` and `~/.config/quickshell/custom/`.
+All source lives at `~/Desktop/MrTrotid_Shell/dotfiles/.config/quickshell/mrtrotid-shell/`, symlinked to `~/.config/quickshell/mrtrotid-shell/`.
 
 ## Entry Point: shell.qml
 The single entry point is `shell.qml`. It creates a `ShellRoot` containing all surfaces. Each popup runs in its own `PanelWindow` (Wayland layer shell surface) with `exclusiveZone: 0`.

@@ -39,7 +39,7 @@ Killed and restarted on each wallpaper change.
 ```bash
 matugen image /path/to/wallpaper.png --prefer darkness
 ```
-Generates `~/.config/quickshell/mrtrotid-shell/colors.json` with Material You tokens.
+Generates `~/.config/quickshell/mrtrotid-shell/colors.json` (via matugen quickshell template) with Material You tokens. Since mrtrotid-shell is symlinked to the repo, this file lands in the repo directory.
 
 ### Generated Color Tokens
 The JSON contains these keys (used by ColorService):
@@ -104,7 +104,7 @@ These files are overwritten on every wallpaper change:
 `wallust` generates terminal colors (Kitty, Hyprland) separately from matugen. Runs as part of `wallset-backend`.
 
 ## Modifying the Pipeline
-- Change ColorService file path: Modify `_colorFilePath` property
+- Change ColorService file path: Modify `_colorFilePath` property in ColorService.qml
 - Change polling interval: Modify Timer interval (default 2000ms)
 - Add new color token: Add to matugen template + ColorService property + _parseColors()
 - Change matugen preferences: Modify `--prefer darkness` in wallpaper apply script
