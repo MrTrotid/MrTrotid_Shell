@@ -8,6 +8,8 @@
 
 set -uo pipefail
 
+FAILED_PKGS=()
+
 # ── Terminal colors ──
 R='\e[0m'; B='\e[1m'; D='\e[2m'; I='\e[3m'
 RED='\e[31m'; GR='\e[32m'; YE='\e[33m'; BL='\e[34m'; MG='\e[35m'; CY='\e[36m'
@@ -68,7 +70,14 @@ spinner() {
     i=$(( (i+1) % 10 ))
     sleep 0.1
   done
-  wait "$pid" && echo -e "\r  ${GR}✔${R}  ${msg}" || echo -e "\r  ${RED}✘${R}  ${msg} ${GY}(failed)${R}"
+  wait "$pid"
+  local rc=$?
+  if [[ $rc -eq 0 ]]; then
+    echo -e "\r  ${GR}✔${R}  ${msg}"
+  else
+    echo -e "\r  ${RED}✘${R}  ${msg} ${GY}(failed)${R}"
+  fi
+  return $rc
 }
 
 # ── Safety ──
@@ -120,6 +129,26 @@ if ! sudo -n true 2>/dev/null; then
 fi
 
 echo
+
+# ── GPU device access check ──
+title "GPU Access Check"
+dri_ok=true
+for d in /dev/dri/renderD* /dev/dri/card*; do
+  [[ -c "$d" ]] || continue
+  if ! [[ -r "$d" && -w "$d" ]]; then
+    dri_ok=false
+    break
+  fi
+done
+if ! $dri_ok; then
+  warn "No GPU device access detected. Adding user to 'video' and 'render' groups..."
+  sudo usermod -aG video,render "$USER"
+  warn "You'll need to log out and back in before Hyprland will work."
+  warn "(Or run: ${B}exec su -l $USER${R} to apply groups immediately)"
+else
+  ok "GPU device access OK"
+fi
+
 ask "Begin installing Trotid Shell?" || exit 0
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -150,8 +179,9 @@ step_paru() {
   # Try pre-compiled paru-bin first (fast, ~5 seconds)
   info "Cloning paru-bin (pre-compiled, fast)..."
   if git clone --depth=1 https://aur.archlinux.org/paru-bin.git "$tmp/paru" 2>/dev/null; then
-    info "Building paru-bin..."
-    (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
+    (cd "$tmp/paru" && makepkg -si --noconfirm) &
+    local pid=$!
+    spinner "$pid" "Building paru-bin"
   else
     warn "Failed to clone paru-bin. Trying source build..."
   fi
@@ -176,8 +206,9 @@ step_paru() {
       rm -rf "$tmp"
       return 1
     fi
-    info "Building paru from source (may take a few minutes)..."
-    (cd "$tmp/paru" && makepkg -si --noconfirm) 2>&1 | tail -5
+    (cd "$tmp/paru" && makepkg -si --noconfirm) &
+    local pid=$!
+    spinner "$pid" "Building paru from source"
   fi
 
   rm -rf "$tmp"
@@ -200,6 +231,8 @@ pkg_installed() { pacman -Qi "$1" &>/dev/null; }
 
 CORE_PKGS=(
   hyprland
+  hypridle
+  hyprlock
   swaybg
   rofi-wayland
   wlogout
@@ -212,6 +245,12 @@ CORE_PKGS=(
   wf-recorder
   playerctl
   brightnessctl
+  polkit-kde-agent
+  gnome-keyring
+  pipewire
+  wireplumber
+  pipewire-pulse
+  qt6ct
   jq
   wl-clipboard
   imagemagick
@@ -254,11 +293,11 @@ step_packages() {
   # ── Browser ──
   echo
   echo -e "  ${GY}Choose your browser:${R}"
-  pick "" "zen-browser (recommended)" "brave-browser" "firefox" "chromium" "Skip"
+  pick "" "zen-browser-bin (recommended, pre-compiled)" "brave-browser" "firefox" "chromium" "Skip"
   local br_choice=$?
   local BROWSER=""
   case $br_choice in
-    1) BROWSER="zen-browser" ;;
+    1) BROWSER="zen-browser-bin" ;;
     2) BROWSER="brave-browser" ;;
     3) BROWSER="firefox" ;;
     4) BROWSER="chromium" ;;
@@ -332,7 +371,7 @@ step_install() {
   fi
 
   # ── Split into repo vs AUR packages ──
-  local KNOWN_AUR=("quickshell" "wallust" "matugen-bin" "ghostty" "zen-browser" "visual-studio-code-bin")
+  local KNOWN_AUR=("quickshell" "wallust" "matugen-bin" "ghostty" "zen-browser-bin" "visual-studio-code-bin")
   local REPO_NEED=() AUR_NEED=()
   local pkg
   for pkg in "${NEED[@]}"; do
@@ -349,6 +388,9 @@ step_install() {
     muted "${REPO_NEED[*]}"
     sudo pacman -S --needed --noconfirm "${REPO_NEED[@]}" || {
       warn "Some repo packages failed"
+      for pkg in "${REPO_NEED[@]}"; do
+        pkg_installed "$pkg" || FAILED_PKGS+=("$pkg")
+      done
       ask "Continue anyway?" || return 1
     }
   fi
@@ -365,12 +407,13 @@ step_install() {
         sudo pacman -Rdd --noconfirm matugen 2>/dev/null || sudo pacman -R --noconfirm matugen 2>/dev/null || true
       fi
 
-      info "Syncing AUR helper..."
-      $helper -Sy --noconfirm || true
       info "Installing AUR packages via $helper..."
       muted "${AUR_NEED[*]}"
       $helper -S --needed --noconfirm "${AUR_NEED[@]}" || {
         warn "Some AUR packages failed"
+        for pkg in "${AUR_NEED[@]}"; do
+          pkg_installed "$pkg" || FAILED_PKGS+=("$pkg")
+        done
         ask "Continue anyway?" || return 1
       }
     fi
@@ -494,14 +537,9 @@ step_deploy() {
 
   # ── Prefer Lua config over Hyprlang .conf ──
   if [[ -f "$HOME/.config/hypr/hyprland.lua" && -f "$HOME/.config/hypr/hyprland.conf" ]]; then
-    info "Both hyprland.lua and hyprland.conf exist. Hyprland will prefer .conf."
-    if ask "Remove hyprland.conf to use the Lua config (recommended)?"; then
-      rm "$HOME/.config/hypr/hyprland.conf"
-      ok "Removed hyprland.conf — Lua config will be used"
-    else
-      warn "Keeping both. Rename .conf manually if Lua doesn't load:"
-      warn "  mv ~/.config/hypr/hyprland.conf ~/.config/hypr/hyprland.conf.bak"
-    fi
+    info "Both hyprland.lua and hyprland.conf found — auto-removing .conf to prefer Lua config."
+    rm "$HOME/.config/hypr/hyprland.conf"
+    ok "Removed hyprland.conf — Lua config will be used"
   fi
 }
 
@@ -534,9 +572,9 @@ step_post() {
 
     local JBM_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
     if command -v curl &>/dev/null; then
-      curl -LfsS -o /tmp/JBM.zip "$JBM_URL" 2>/dev/null
+      curl -LfsS --connect-timeout 30 --max-time 120 -o /tmp/JBM.zip "$JBM_URL" 2>/dev/null
     else
-      wget -q -O /tmp/JBM.zip "$JBM_URL" 2>/dev/null
+      wget -q --timeout=30 -O /tmp/JBM.zip "$JBM_URL" 2>/dev/null
     fi
 
     if [[ -f /tmp/JBM.zip ]] && unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null; then
@@ -549,9 +587,9 @@ step_post() {
       # Fallback: use specific version tag
       local JBM_URL_FALLBACK="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/JetBrainsMono.zip"
       if command -v curl &>/dev/null; then
-        curl -LfsS -o /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
+        curl -LfsS --connect-timeout 30 --max-time 120 -o /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
       else
-        wget -q -O /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
+        wget -q --timeout=30 -O /tmp/JBM.zip "$JBM_URL_FALLBACK" 2>/dev/null
       fi
       if [[ -f /tmp/JBM.zip ]] && unzip -q -o /tmp/JBM.zip -d "$HOME/.local/share/fonts/JetBrainsMono" 2>/dev/null; then
         rm -f /tmp/JBM.zip
@@ -593,10 +631,97 @@ step_post() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  STEP 7 — Display Manager Auto-Start
+#  STEP 7 — Hardware detection and monitor config generation
+# ═══════════════════════════════════════════════════════════════════════════════
+step_monitors() {
+  title "Step 7: Hardware Detection"
+
+  # ── GPU info ──
+  if command -v lspci &>/dev/null; then
+    local gpu; gpu=$(lspci 2>/dev/null | grep -iE "vga|3d|display" | head -1 | sed 's/.*: //')
+    [[ -n "$gpu" ]] && info "GPU: ${B}$gpu${R}"
+  fi
+
+  # ── Detect connected DRM outputs ──
+  local outputs=()
+  for dev in /sys/class/drm/card*-*/status; do
+    [[ ! -f "$dev" ]] && continue
+    local name; name=$(basename "$(dirname "$dev")")
+    name="${name#card*-}"
+    [[ -z "$name" || "$name" == "card"* ]] && continue
+    local status; status=$(cat "$dev" 2>/dev/null)
+    [[ "$status" == "connected" ]] && outputs+=("$name")
+  done
+
+  if [[ ${#outputs[@]} -eq 0 ]]; then
+    ok "Auto-detection fallback will handle monitor configuration"
+    return 0
+  fi
+
+  info "Detected ${#outputs[@]} monitor(s): ${B}${outputs[*]}${R}"
+
+  # ── Check if shipped config matches detected hardware ──
+  local hypr_dir="$HOME/.config/hypr"
+  local ml="$hypr_dir/monitors.lua"
+  local mc="$hypr_dir/monitors.conf"
+
+  if [[ -f "$ml" ]]; then
+    local needs_update=false
+    for out in "${outputs[@]}"; do
+      if ! grep -qF "$out" "$ml" 2>/dev/null; then
+        needs_update=true
+        break
+      fi
+    done
+
+    if $needs_update; then
+      info "Shipped monitor config doesn't match your hardware — generating new one."
+      # ── Generate monitors.lua ──
+      {
+        echo "-- Monitor configuration for Trotid Shell"
+        echo "-- Auto-generated by installer"
+        echo ""
+        echo "for _, m in ipairs({"
+        local x=0
+        for out in "${outputs[@]}"; do
+          echo "    { output = \"$out\", mode = \"preferred\", position = \"${x}x0\", scale = 1.0 },"
+          x=$((x + 1920))
+        done
+        echo "}) do"
+        echo "    hl.monitor(m)"
+        echo "end"
+        echo ""
+        local i=1
+        for out in "${outputs[@]}"; do
+          local def="false"
+          [[ $i -eq 1 ]] && def="true"
+          echo "hl.workspace({ id = $i, monitor = \"$out\", default = $def })"
+          i=$((i+1))
+        done
+      } > "$ml"
+
+      # ── Generate monitors.conf ──
+      {
+        echo "# Monitor configuration — auto-generated by installer"
+        echo ""
+        for out in "${outputs[@]}"; do
+          echo "monitor=$out,preferred,auto,1"
+        done
+        echo ""
+        echo "# Catch-all fallback"
+        echo "monitor=,preferred,auto,1"
+      } > "$mc"
+
+      ok "Generated monitor config for: ${outputs[*]}"
+    fi
+  fi
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STEP 8 — Display Manager Auto-Start
 # ═══════════════════════════════════════════════════════════════════════════════
 step_autostart() {
-  title "Step 7: Hyprland Startup"
+  title "Step 8: Hyprland Startup"
 
   # Detect installed display managers (in priority order)
   local dms=()
@@ -643,11 +768,27 @@ step_autostart() {
 # ═══════════════════════════════════════════════════════════════════════════════
 step_paru
 step_packages
-step_install
 step_backup
+step_install
 step_deploy
 step_post
+step_monitors
 step_autostart
+
+# ── Failed packages report ──
+if [[ ${#FAILED_PKGS[@]} -gt 0 ]]; then
+  echo
+  echo -e "  ${YE}${B}┌─ Failed Packages ─────────────────────────────────┐${R}"
+  echo -e "  ${YE}${B}│${R}  The following packages failed to install:"
+  for pkg in "${FAILED_PKGS[@]}"; do
+    echo -e "  ${YE}${B}│${R}    ${GY}•${R} ${B}$pkg${R}"
+  done
+  echo -e "  ${YE}${B}│${R}"
+  echo -e "  ${YE}${B}│${R}  Install them manually:"
+  echo -e "  ${YE}${B}│${R}    ${B}sudo pacman -S ${FAILED_PKGS[*]}${R}"
+  echo -e "  ${YE}${B}└────────────────────────────────────────────────────┘${R}"
+  echo
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SUMMARY
