@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-WALLPAPER_DIR="$HOME/.config/wallpapers"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 CACHE="$HOME/.cache/wallpapers_list.txt"
 LAST_FILE="$HOME/.cache/last_wallpaper"
 

@@ -535,7 +535,7 @@ Item {
                             text: BatteryService.hasBattery ? BatteryService.batteryPercent + "%" : ""
                             color: colOnPrimary
                             font.family: "JetBrainsMono Nerd Font"
-                            font.pixelSize: 12
+                    font.pixelSize: 14
                             font.weight: Font.Bold
                         }
                     }
@@ -562,6 +562,7 @@ Item {
                 // Mic indicator
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -1
                     visible: true
                     text: AudioService.micMuted ? "\uF131" : "\uF130"
                     color: AudioService.micMuted ? colError : colPrimary
@@ -597,7 +598,6 @@ Item {
                     color: colPrimary
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
-                    opacity: root.cameraActive ? 1.0 : 0.45
                 }
 
                 // Bluetooth
@@ -667,21 +667,41 @@ Item {
                 }
 
                 // Notifications
-                Text {
+                Item {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "󰂚"
-                    color: colOnSurface
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
+                    width: notifText.width + (badge.visible ? 8 : 0)
+                    height: 20
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            ShellState.barVisible = true
-                            ShellState.keepBarTemporarily()
-                            ShellState.toggleNotificationPanel()
+                    Text {
+                        id: notifText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: NotificationService.unread > 0 ? "\uF0F3" : "\uF0A2"
+                        color: NotificationService.unread > 0 ? colPrimary : colOnSurface
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 14
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                ShellState.barVisible = true
+                                ShellState.keepBarTemporarily()
+                                ShellState.toggleNotificationPanel()
+                            }
                         }
+                    }
+
+                    Rectangle {
+                        id: badge
+                        visible: NotificationService.unread > 0
+                        anchors.left: notifText.right
+                        anchors.leftMargin: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenterOffset: -4
+                        width: 6
+                        height: 6
+                        radius: 3
+                        color: colPrimary
                     }
                 }
 

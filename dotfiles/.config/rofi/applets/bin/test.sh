@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Path to your icon folder
-ICON_DIR="$HOME/.config/wallpapers/wal-icons"
+ICON_DIR="$HOME/Pictures/Wallpapers/wal-icons"
 
 # Define your options
 OPTIONS="Option 1\nOption 2"

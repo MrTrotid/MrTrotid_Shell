@@ -3,7 +3,7 @@
 
 dir="$HOME/.config/rofi/launchers/type-3"
 theme='style-4'
-WALL_DIR="$HOME/.config/wallpapers"
+WALL_DIR="$HOME/Pictures/Wallpapers"
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 CWD="$(pwd)"
 # Build list of wallpaper filenames (include extensions)

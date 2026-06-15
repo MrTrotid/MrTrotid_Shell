@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 
 ROFI_THEME="$HOME/.config/rofi/launchers/type-1/style-1.rasi"
-WALL_DIR="$HOME/.config/wallpapers"
+WALL_DIR="$HOME/Pictures/Wallpapers"
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 CWD="$(pwd)"
 # Build list of wallpaper filenames (include extensions)

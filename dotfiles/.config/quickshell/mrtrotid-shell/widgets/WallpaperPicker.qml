@@ -72,7 +72,7 @@ Item {
     readonly property string thumbDir: "file://" + paths.getCacheDir("wallpaper_picker") + "/thumbs"
     readonly property string srcDir: {
         const dir = Quickshell.env("WALLPAPER_DIR")
-        return (dir && dir !== "") ? dir : Quickshell.env("HOME") + "/.config/wallpapers"
+        return (dir && dir !== "") ? dir : Quickshell.env("HOME") + "/Pictures/Wallpapers"
     }
 
     readonly property var transitions: ["simple", "fade", "left", "right", "top", "bottom", "wipe", "grow", "center", "outer", "wave"]
@@ -290,6 +290,18 @@ Item {
         sortField: FolderListModel.Name
         onCountChanged: window.syncLocalModel()
         onStatusChanged: { if (status === FolderListModel.Ready) window.syncLocalModel() }
+    }
+
+    Process {
+        id: thumbGenProcess
+        property string pendingCommand: ""
+        running: false
+        command: ["sh", "-c", pendingCommand]
+        onExited: {
+            // Force folder model rescan by toggling folder URL
+            localFolderModel.folder = ""
+            localFolderModel.folder = window.thumbDir
+        }
     }
 
     property int _localSyncedCount: 0
@@ -738,8 +750,24 @@ Item {
         }
     }
 
+    function generateMissingThumbnails() {
+        var script = "SRC=\"" + srcDir + "\"\n"
+            + "THUMBS=\"" + paths.getCacheDir("wallpaper_picker") + "/thumbs\"\n"
+            + "mkdir -p \"$THUMBS\"\n"
+            + "if command -v magick &> /dev/null; then CMD=\"magick\"; else CMD=\"convert\"; fi\n"
+            + "find -L \"$SRC\" -maxdepth 1 -type f \\( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" -o -iname \"*.webp\" -o -iname \"*.gif\" \\) | while read f; do\n"
+            + "  base=$(basename \"$f\")\n"
+            + "  [ -f \"$THUMBS/$base\" ] && continue\n"
+            + "  $CMD \"$f\" -resize 400x420^ -gravity center -extent 400x420 \"$THUMBS/$base\" 2>/dev/null\n"
+            + "done\n"
+            + "echo done"
+        thumbGenProcess.pendingCommand = script
+        thumbGenProcess.running = true
+    }
+
     Component.onCompleted: {
         view.forceActiveFocus();
+        generateMissingThumbnails();
         processMarkers();
         triggerColorExtraction();
     }

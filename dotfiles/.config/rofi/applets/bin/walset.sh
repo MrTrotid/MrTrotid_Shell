@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="$HOME/.config/wallpapers"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 MONITOR="eDP-1"
 HYPR_CONF="$HOME/.config/hypr/hyprpaper.conf"
 

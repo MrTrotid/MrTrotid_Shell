@@ -530,8 +530,8 @@ step_deploy() {
 
   # ── Wallpapers ──
   if [[ -d "$DOTFILES_DIR/.config/wallpapers" ]]; then
-    mkdir -p "$HOME/.config/wallpapers"
-    cp -rn "$DOTFILES_DIR/.config/wallpapers/"* "$HOME/.config/wallpapers/" 2>/dev/null
+    mkdir -p "$HOME/Pictures/Wallpapers"
+    cp -rn "$DOTFILES_DIR/.config/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null
     ok "Copied wallpapers"
   fi
 
@@ -554,7 +554,7 @@ step_post() {
     info "Generating wallpaper thumbnails..."
     local td="$HOME/.cache/quickshell/wallpaper_picker/thumbs"
     mkdir -p "$td"
-    for img in "$HOME/.config/wallpapers/"*; do
+    for img in "$HOME/Pictures/Wallpapers/"*; do
       [[ -f "$img" ]] || continue
       local t="$td/$(basename "$img")"
       [[ -f "$t" ]] && continue

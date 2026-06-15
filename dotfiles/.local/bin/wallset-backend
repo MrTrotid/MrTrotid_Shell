@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="$HOME/.config/wallpapers"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 SDDM_WALLPAPER="/usr/share/wallpapers/Next/contents/images/5120x2880.png"
 
 # Pick random image
