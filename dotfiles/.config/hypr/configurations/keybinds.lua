@@ -45,8 +45,8 @@ hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
 
 -- === Window: Close / Float / Fullscreen ===
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + G", hl.dsp.window.float())
-hl.bind(mainMod .. " + P", hl.dsp.window.pin())
+hl.bind(mainMod .. " + G", hl.dsp.togglefloating())
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("wlogout"))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.exec_cmd("hyprctl dispatch fullscreen 1"))
 
@@ -117,4 +117,4 @@ hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tru
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 
 -- === Shell: Restart ===
-hl.bind("CTRL + " .. mainMod .. " + R", hl.dsp.exec_cmd("pkill -x qs 2>/dev/null; pkill -x quickshell 2>/dev/null; quickshell -c mrtrotid-shell &"))
+hl.bind("CTRL + " .. mainMod .. " + R", hl.dsp.exec_cmd("pkill -x qs quickshell 2>/dev/null; quickshell -c mrtrotid-shell &"))
