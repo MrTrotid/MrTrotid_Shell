@@ -16,10 +16,9 @@ button {
     box-shadow: 0 0 10px 2px transparent;
     border-radius: 20px;
     margin: 8px;
-    padding: 0;
-    padding-bottom: 28px;
+    padding: 80px 0 12px 0;
     min-width: 130px;
-    min-height: 130px;
+    min-height: 150px;
 }
 
 button:focus {

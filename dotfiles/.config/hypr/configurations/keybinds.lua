@@ -46,7 +46,7 @@ hl.bind(mainMod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
 -- === Window: Close / Float / Fullscreen ===
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + G", hl.dsp.togglefloating())
-hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("wlogout"))
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("pkill -x wlogout || wlogout"))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.exec_cmd("hyprctl dispatch fullscreen 1"))
 

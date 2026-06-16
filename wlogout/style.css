@@ -9,26 +9,25 @@ window {
 
 button {
     background-repeat: no-repeat;
-    background-position: center 30%;
-    background-size: 40%;
+    background-position: center 18%;
+    background-size: 26%;
     background-color: transparent;
     transition: all 0.3s ease-in;
     box-shadow: 0 0 10px 2px transparent;
     border-radius: 20px;
     margin: 8px;
-    padding: 0;
-    padding-bottom: 28px;
+    padding: 6px 12px;
     min-width: 130px;
-    min-height: 130px;
+    min-height: 200px;
 }
 
 button:focus {
     box-shadow: none;
-    background-size: 40%;
+    background-size: 34%;
 }
 
 button:hover {
-    background-size: 50%;
+    background-size: 40%;
     box-shadow: 0 0 10px 3px rgba(0, 0, 0, 0.4);
     background-color: rgba(131, 210, 228, 0.25);
     color: transparent;
