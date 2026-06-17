@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Screenshot helper for Hyprland (grim + slurp)
 # Usage: screenshot.sh [mode]
-# Modes: full, region, window, timer, monitor, copy
+# Modes: full, region, window, timer, monitor, copy, annotate
 
 DIR="$HOME/Pictures/Screenshots"
 mkdir -p "$DIR"
@@ -47,20 +47,17 @@ case "${1:-full}" in
         FILE="$DIR/Annotate_$(date +%Y-%m-%d_%H.%M.%S).png"
         grim -g "$GEOM" "$FILE"
         mkdir -p /tmp/swappy_save
-        BEFORE=$(ls /tmp/swappy_save/ 2>/dev/null | sort)
+        BEFORE=$(ls /tmp/swappy_save/ 2>/dev/null)
         swappy -f "$FILE"
-        AFTER=$(ls /tmp/swappy_save/ 2>/dev/null | sort)
-        if [ "$AFTER" != "$BEFORE" ]; then
-            NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
-            if [ -n "$NEW" ]; then
-                mv "/tmp/swappy_save/$NEW" "$FILE"
-                wl-copy --type image/png < "$FILE"
-                $NOTIFY "Screenshot" "Annotated screenshot saved" "screenshot"
-            fi
+        AFTER=$(ls /tmp/swappy_save/ 2>/dev/null)
+        NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
+        if [ -n "$NEW" ]; then
+            mv "/tmp/swappy_save/$NEW" "$FILE"
+            wl-copy --type image/png < "$FILE"
+            $NOTIFY "Annotate" "Annotated screenshot saved" "screenshot"
         else
             rm -f "$FILE"
         fi
-        rm -rf /tmp/swappy_save
         ;;
     *)
         echo "Usage: $0 {full|region|window|timer|monitor|copy}"

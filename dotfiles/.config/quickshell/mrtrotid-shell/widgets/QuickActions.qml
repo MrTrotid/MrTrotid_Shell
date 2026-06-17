@@ -11,7 +11,7 @@ FocusScope {
     implicitWidth: bgRect.width
 
     property int currentIndex: 0
-    property int totalItems: 7
+    property int totalItems: 5
 
     focus: true
 
@@ -50,15 +50,16 @@ FocusScope {
     }
 
     function executeItem(index) {
+        var cmd = [];
         switch(index) {
-            case 0: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "~/.config/scripts/screenshots/screenshot.sh", "full"])); break;
-            case 1: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "~/.config/scripts/screenshots/screenshot.sh", "region"])); break;
-            case 2: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "-c", "xdg-open $(xdg-user-dir PICTURES)/Screenshots"])); break;
-            case 3: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "~/.config/scripts/recording/recording.sh", "region"])); break;
-            case 4: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "~/.config/scripts/recording/recording.sh", "full"])); break;
-            case 5: close(); Qt.callLater(() => Quickshell.execDetached(["bash", "-c", "xdg-open $(xdg-user-dir VIDEOS)/Recordings"])); break;
-            case 6: close(); Qt.callLater(() => Quickshell.execDetached(["hyprpicker", "-a"])); break;
+            case 0: cmd = ["bash", "-c", "$HOME/.config/scripts/screenshots/screenshot.sh annotate"]; break;
+            case 1: cmd = ["bash", "-c", "$HOME/.config/scripts/ocr.sh"]; break;
+            case 2: cmd = ["bash", "-c", "$HOME/.config/scripts/google-lens.sh"]; break;
+            case 3: cmd = ["bash", "-c", "ghostty -e yazi \"$(xdg-user-dir PICTURES)/Screenshots\""]; break;
+            case 4: cmd = ["ghostty", "--title=cachy-update", "-e", "cachy-update"]; break;
         }
+        Quickshell.execDetached(cmd);
+        close();
     }
 
     // Background pill
@@ -119,13 +120,11 @@ FocusScope {
 
             Repeater {
                 model: [
-                    { icon: "\uF030", tip: "Full Screenshot" },
-                    { icon: "\uF125", tip: "Region Screenshot" },
+                    { icon: "\uF044", tip: "Annotate Screen" },
+                    { icon: "\uF15C", tip: "OCR Text" },
+                    { icon: "\uF002", tip: "Google Lens" },
                     { icon: "\uF07B", tip: "Open Screenshots" },
-                    { icon: "\uF03D", tip: "Record Region" },
-                    { icon: "\uF130", tip: "Record Fullscreen" },
-                    { icon: "\uF07B", tip: "Open Recordings" },
-                    { icon: "\uF121", tip: "Color Picker" }
+                    { icon: "\uF021", tip: "cachy-update" }
                 ]
 
                 delegate: Item {
