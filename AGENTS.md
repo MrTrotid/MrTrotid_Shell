@@ -8,52 +8,7 @@
   - `~/.config/rofi/colors/colors-matugen.rasi`
   - `~/.config/hypr/colors/*`
   - `~/.cache/wallust/colors-kitty.conf`
-  - `~/.config/wlogout/style.css` (generated from matugen template)
-
-## Setup Instructions
-
-### Fresh Install
-```bash
-# Clone the repo
-git clone https://github.com/Noro18/linux-ricing-dotfiles ~/Desktop/MrTrotid_Shell
-cd ~/Desktop/MrTrotid_Shell
-
-# Run the installer (Arch-based systems)
-chmod +x install.sh && ./install.sh
-```
-
-This will:
-- Install all required packages (Hyprland, Quickshell, wallust, matugen, etc.)
-- Backup existing configs to `~/.config.bak-<timestamp>/`
-- Symlink quickshell config for live development updates
-- Copy hypr, rofi, kitty, wallpapers, and other configs
-- Copy bin scripts (wallset-backend, etc.) to `~/.local/bin/`
-- Symlink wlogout and scripts directories
-- Install JetBrains Nerd Font
-- Set up quickshell-overview user config
-- Add Quickshell auto-start to hyprland.conf
-
-### Post-Install
-```bash
-# Log out and back in to Hyprland, then:
-wallset                    # Set initial wallpaper (triggers theming pipeline)
-Super + /                  # Open keybind cheatsheet
-Super + I                  # Open settings panel
-```
-
-### Dev Workflow (after install)
-```bash
-./reload.sh                # Reload Quickshell after QML edits
-./start-trotid.sh          # Launch Hyprland with this config (for testing)
-```
-
-### Update Shell (from Settings panel)
-1. Open Settings with `Super + I`
-2. Go to the **About** tab
-3. The **Update Shell** section auto-detects the repo path
-4. Click **Check Updates** to fetch and show commits behind
-5. Click **Update Now** to pull latest changes
-6. Click **Restart Shell** to apply
+  - `~/.config/wlogout/style.css` (generated from matugen template) — uses `rgba()`, NOT 8-digit hex (#RRGGBBAA unsupported by GTK parser); text pushed below icons via large `padding-top`
 
 ## Essential Commands
 - Change wallpaper: `wallset` (opens selector) or `Super + W`
@@ -62,9 +17,9 @@ Super + I                  # Open settings panel
 - Toggle bar: `Super + O` (Quickshell bar visibility)
 - Toggle media visualizer: `Super + M` (slides in from right)
 - Toggle notification panel: `Super + A` (slide-in from right)
-- Toggle quick actions HUD: `Super + J` (slide-up from bottom)
+- Toggle quick actions HUD: `Super + J` (slide-up from bottom) — 5 utility buttons
 - Toggle cheatsheet: `Super + /` (keybind reference with executable actions)
-- Toggle settings panel: `Super + I` (floating centered panel with General/About sections)
+- Toggle settings panel: `Super + I` (floating centered panel with General/About tabs + Update Shell)
 - Toggle power menu: `Super + P` (wlogout overlay — lock/suspend/logout/reboot/power off)
 - Toggle Calendar popup: Click time in bar
 - Toggle workspace overview: `Super + Tab` (quickshell-overview GUI)
@@ -76,11 +31,11 @@ Super + I                  # Open settings panel
 
 ## Configuration Locations
 - Hyprland: `dotfiles/.config/hypr/hyprland.conf` (main entry)
-- Quickshell: `~/.config/quickshell/mrtrotid-shell/` (symlink to `~/Desktop/MrTrotid_Shell/dotfiles/.config/quickshell/mrtrotid-shell/`)
+- Quickshell: `~/.config/quickshell/mrtrotid-shell/` (symlink to `~/Desktop/Trotid_Shell/quickshell/`)
 - Quickshell (custom): `~/.config/quickshell/custom/` (same symlink target)
 - Rofi: Launchers in `dotfiles/.config/rofi/launchers/`, applets in `applets/`
 - Kitty: `dotfiles/.config/kitty/kitty.conf` (references wallust cache)
-- Wallpapers: `dotfiles/.config/wallpapers/` (scanned by selector)
+- Wallpapers: `~/Pictures/Wallpapers/` (scanned by selector, copied from `dotfiles/.config/wallpapers/` during install)
 - wlogout: `~/.config/wlogout/` (symlink to `~/Desktop/Trotid_Shell/wlogout/`)
 
 ## Theming Pipeline
@@ -91,7 +46,7 @@ Super + I                  # Open settings panel
 5. All components update live via singleton service bindings
 
 ## Quickshell Config Structure
-All config lives at `~/Desktop/MrTrotid_Shell/dotfiles/.config/quickshell/mrtrotid-shell/` (symlinked to `~/.config/quickshell/mrtrotid-shell/`):
+All config lives at `~/Desktop/Trotid_Shell/quickshell/` (symlinked to `~/.config/quickshell/{custom,mrtrotid-shell}`):
 
 - `shell.qml` - **Single entry point**: Each component runs in its own Wayland layer shell surface:
   - `PanelWindow (main)` - Bar (exclusiveZone: 34, Top layer)
@@ -174,7 +129,7 @@ All themeable widgets now use `ColorService` (Material You from matugen). ColorS
 
 ### Key Decisions
 - Colors bound to ColorService (Material You from matugen)
-- **All keybinds in one file** (`hypr/keybinds.conf`) for cheatsheet generation
+- **All keybinds in one file** (`hypr/configurations/keybinds.conf`) for cheatsheet generation — THIS is the file sourced by `hyprland.conf` at `~/.config/hypr/configurations/keybinds.conf`. `hypr/keybinds.conf` is a sync copy. Edit `hypr/configurations/keybinds.conf`, then `cp` to `hypr/keybinds.conf`. Run `hyprctl reload` to apply changes live.
 - **Shell toggles use global IPC** (`global, quickshell:<action>`)
 - **Notification DBus server** - Single `NotificationServer` in `NotificationService.qml`
 - **swaybg for wallpaper setting** - swww not in repos
@@ -209,7 +164,7 @@ All themeable widgets now use `ColorService` (Material You from matugen). ColorS
 - **Config path matters for IPC**: `qs ipc -c overview` resolves the config path using standard search paths. If the running instance was started from `/etc/xdg/` but a user copy exists at `~/.config/quickshell/overview/`, IPC will fail with "No running instances" because it looks for the user-path instance. **Fix**: Kill the old process and restart from the user config path.
 - **Override file**: `Overview.qml` at `~/.config/quickshell/overview/modules/overview/Overview.qml` — add keyboard navigation handlers here. The `Keys.onPressed` handler in the `keyHandler` Item (lines 120-214) manages all keyboard input.
 - **Tab navigation added**: `Qt.Key_Tab` (next column) and `Qt.Key_Backtab` (previous column) — must be added to both the handler AND the `targetId === null` dispatch condition check.
-- **Auto-start in shell.qml**: Uses `Process` with `pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline | tr "\\0" " " | grep -q "overview"' || qs -c overview` to check before starting (3s delay via Timer).
+- **Auto-start in shell.qml**: Uses `Process` with `nohup qs -c overview > /dev/null 2>&1 & disown` (backgrounded so Process exits cleanly). Runs at 3s delay via Timer. The `qs` command must NOT block the Process or it stays in `running: true` forever.
 - **focused workspace indicator**: 2px colored border rectangle in `OverviewWidget.qml` (lines 1185-1205) — updates position via `Behavior on x/y` animations.
 
 ### Troubleshooting
@@ -221,6 +176,20 @@ All themeable widgets now use `ColorService` (Material You from matugen). ColorS
 ## Scripts
 All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell/scripts/`).
 
+### Quick Actions HUD (`Super + J`) — 5 Utility Buttons
+
+Sliding pill bar at bottom-center with keyboard navigation (H/L/arrows to move, Enter to execute, Escape to close). Each action captures a region with `slurp` (except screenshots folder and cachy-update):
+
+| # | Icon | Label | What it does |
+|---|------|-------|-------------|
+| 0 | `\uF044` (pencil) | Annotate | `slurp` region → `grim` capture → `swappy -f` for live annotation. Saves to `~/Pictures/Screenshots/` + clipboard only on explicit Save click; Escape discards |
+| 1 | `\uF15C` (file-text) | OCR | `slurp` region → `grim` → `tesseract` → clipboard + notification with text preview. Requires `tesseract-data-eng` |
+| 2 | `\uF002` (search) | Google Lens | `slurp` region → `grim` → `curl` upload to Google `searchbyimage/upload` API → opens results in `zen-browser` automatically |
+| 3 | `\uF07B` (folder) | Screenshots | Opens `~/Pictures/Screenshots/` in `yazi` via `ghostty -e yazi` |
+| 4 | `\uF021` (sync) | cachy-update | (CachyOS-specific) Launches `cachy-update` in a floating `ghostty` terminal (windowrule: center 1000x700) |
+
+Architecture: `Quickshell.execDetached(["bash", "-c", "\$HOME/..."])` for proper env expansion, popup closes after execution.
+
 ### Screenshots (`~/.config/scripts/screenshots/screenshot.sh`)
 | Key | Mode |
 |-----|------|
@@ -230,7 +199,7 @@ All scripts live at `~/.config/scripts/` (symlinked from `~/Desktop/Trotid_Shell
 | `Alt+Print` | Monitor select |
 | `Ctrl+Shift+Print` | Region select + swappy annotation |
 
-Uses `grim` + `slurp`. Saves to `~/Pictures/Screenshots/`, copies to clipboard via `wl-copy`. Annotation uses `swappy`.
+Uses `grim` + `slurp`. Saves to `~/Pictures/Screenshots/`, copies to clipboard via `wl-copy`. Annotation (`Ctrl+Shift+Print` or QuickActions) uses `swappy` — saves only on explicit Save click (detects file in `/tmp/swappy_save/`); Escape discards the temp file.
 
 ### Screen Recording (`~/.config/scripts/recording/recording.sh`)
 | Key | Mode |
@@ -239,6 +208,22 @@ Uses `grim` + `slurp`. Saves to `~/Pictures/Screenshots/`, copies to clipboard v
 | `Ctrl+Alt+R` | Full screen recording / stop |
 
 Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
+
+### OCR (`~/.config/scripts/ocr.sh`)
+- Used by Quick Actions HUD (Super+J → OCR button)
+- Captures region with `slurp`, runs `tesseract` via pipe: `grim -g "$GEOM" - | tesseract stdin stdout`
+- Copies extracted text to clipboard via `wl-copy`
+- Shows notification with text preview (first 5 lines, 80 chars each)
+- If no text detected, shows error notification
+- Requires `tesseract-data-eng` installed (language pack)
+
+### Google Lens (`~/.config/scripts/google-lens.sh`)
+- Used by Quick Actions HUD (Super+J → Google Lens button)
+- Captures region with `slurp`, saves to `/tmp/lens_capture.png`
+- Copies image to clipboard via `wl-copy --type image/png`
+- Uploads to Google's `searchbyimage/upload` API via `curl` → gets search URL
+- Opens results URL in `zen-browser` (auto, no manual paste needed)
+- Fallback: if upload fails, notifies user to Ctrl+V manually
 
 ### Clipboard History (`~/.config/scripts/clipboard-picker.sh`)
 - `Super+V` - Opens clipboard history picker (rofi + cliphist)
@@ -254,6 +239,7 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + A` | Toggle notification panel | `quickshell:notificationPanelToggle` |
 | `Super + M` | Toggle media card | `quickshell:mediaControlsToggle` |
 | `Super + J` | Toggle quick actions HUD | `quickshell:quickActionsToggle` |
+| `Super + I` | Toggle settings panel | `quickshell:settingsToggle` |
 | `Super + /` | Toggle cheatsheet | `quickshell:cheatsheetToggle` |
 | `Ctrl + Super + T` | Toggle wallpaper picker | `quickshell:wallpaperToggle` |
 | `Super + V` | Toggle clipboard manager | `quickshell:clipboardToggle` |
@@ -262,7 +248,6 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + Tab` | Toggle workspace overview | `qs ipc -c overview call overview toggle` |
 | `Super + Return` | Terminal (ghostty) | exec |
 | `Super + Space` | App launcher (rofi) | exec |
-| `Super + V` | Clipboard history | exec |
 | `Super + W` | Browser (zen) | exec |
 | `Super + E` | File manager (thunar) | exec |
 | `Super + C` | Editor (nvim) | exec |
@@ -283,46 +268,6 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + Shift + C` | Color picker (hyprpicker) | exec |
 | `Ctrl + Shift + R` | Region recording | exec |
 | `Ctrl + Alt + R` | Full recording | exec |
-
-## Changelog (Recent Fixes)
-
-### Cross-Machine Compatibility
-- **GPU group check**: Script verifies user belongs to `video`/`render` groups at start; adds them if missing (fixes `DRM_IOCTL_MODE_CREATE_DUMB failed: Permission denied`)
-- **VM detection**: `systemd-detect-virt` with per-VM DRM fallbacks (VirtualBox → `Virtual1`, QEMU/KVM → `Virtual-1`, VMware → `Virtual1`, Hyper-V → `Virtual-1`)
-- **Monitor auto-generation**: `step_monitors` generates `monitors.lua` + `monitors.conf` from `/sys/class/drm/card*-*/status`; non-interactive
-- **Package failure tracking**: `FAILED_PKGS=()` array; failed repo + AUR packages tracked individually; styled "Failed Packages" box at end
-
-### Quickshell Config
-- **Restructured**: All QML files moved from `quickshell/` to `quickshell/mrtrotid-shell/` subdirectory so `quickshell -c mrtrotid-shell` resolves correctly
-- **Overview config**: Stays at `quickshell/overview/` (separate qs instance)
-
-### QML Fixes
-- **Cheatsheet.qml:444**: `modelData.binds.length` → `bindsRepeater.bindsCount` (bind entries don't have `.binds`)
-- **Cheatsheet.qml:301**: `hScrollBarMa` was referenced but never defined — wrapped scrollbar content in MouseArea
-- **shell.qml:1093**: `exitCode` scope in `onRunningChanged` → `overviewStartProc.exitCode`
-
-### Hyprland Lua API Fixes (0.55+)
-- `hl.animation({ curve = "X" })` → `hl.animation({ bezier = "X" })` (`curve` field is silently ignored)
-- `hl.dsp.togglefloating()` → `hl.dsp.window.float()` (no such namespace method)
-- `hl.workspace({ id = N })` → `hl.workspace_rule({ workspace = "N" })` (`hl.workspace` does not exist)
-- `size = {width=800,height=600}` → `size = "800 600"` (window rule effect uses space-separated string)
-- `opacity_active` removed, merged into `opacity = "0.95 0.90"` (no such field)
-
-### Scripts Cleaned
-- `wallset-backend`, `wallset-backend-startup`, `colorscheme-backend`: removed `anaconda3/bin` PATH pollution
-- `wallset-backend`, `wallset-backend-startup`, `wallock-set-backend`, `waybar-set`: removed `MONITOR="eDP-1"` hardcode (unused/swaybg uses auto-detect)
-- `start-waybar`, `wallset-dark-backend-startup`: `killall` → `pkill -x`
-- `colorscheme-backend`: removed `/home/noro18/anaconda3/bin/wal` and `/home/noro18/.cargo/bin/matugen` hardcoded paths
-- `lyra-assistant`: now uses `$LYRA_DIR` env var instead of `/home/noro18` hardcoded path
-- `setfhd`/`sethd`: auto-detect monitor name via `hyprctl monitors -j | jq -r '.[0].name'`
-
-### Installer Fixes
-- `step_backup` moved before `step_install` in pipeline
-- `| tail -5` pipeline masking replaced with `spinner` + `wait` (preserves makepkg exit code)
-- `killall qs quickshell` → `pkill -x qs; pkill -x quickshell` in keybinds
-- `curl`/`wget` font download: added `--connect-timeout 30 --max-time 120` / `--timeout=30`
-- Removed `$helper -Sy --noconfirm` partial-sync line
-- `local` keyword removed from external-scope variables in functions
 
 ## Verification
 - Check if changes survived wallpaper switch: Run `wallset`
@@ -350,6 +295,16 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - Fix: `pkill -f "qs -c overview" && nohup qs -c overview > /dev/null 2>&1 & disown`
 - Check path: `pgrep -a qs | grep overview` shows the running config path
 
+**Tesseract OCR failing (exit code 1):**
+- `tesseract-data-eng` is NOT installed by default — only `tesseract-data-afr` and `tesseract-data-osd` ship with `tesseract`
+- Install: `sudo pacman -S tesseract-data-eng`
+- Verify: `echo "test" | tesseract - -` should output text and exit 0
+
+**Overview auto-start fails silently:**
+- The `qs -c overview` command in `Process` must be backgrounded (`nohup ... &`) or the Process never exits
+- Check: `pgrep -a qs | grep overview` — if running, auto-start was successful
+- Manual start: `nohup qs -c overview > /dev/null 2>&1 & disown`
+
 **Ghostty crash after wallpaper change:**
 - Wallset-backend previously had a `kill -USR1` loop for ghostty, which was REMOVED
 - USR1 is redundant — wallust already sends OSC escape sequences for live colors
@@ -361,11 +316,21 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 - `killall qs` kills the opencode tool itself
 - Always use `pkill -x <exact_name>` instead of `killall`
 
-**Camera privacy indicator:**
+**Camera privacy indicator (NOT YET DONE):**
+- Lenovo LOQ 15IRH8 has a physical e-shutter button on the side of the laptop
 - Camera usage detected via `fuser /dev/video0` (polls every 3s) — shows camera icon (`\uF030`, `colPrimary`, full opacity) when a process has the device open, or camera-off icon (`md-camera_off` at U+F05DF via surrogate pair `\uDB81\uDDDF`, 45% opacity) when idle
 - Bar icon matches WiFi/Bluetooth: uses `colPrimary` with opacity differentiation
 - About section in Settings panel shows Camera: IDLE / IN USE with matching icons
-- Simple ON/OFF status — does not track which app is using the camera
+- **TODO**: The indicator works but needs testing — confirm `fuser` detects camera usage correctly across different apps, consider adding desktop notification on state change, and verify polling doesn't miss rapid toggles
+
+**wlogout text positioning:**
+- GTK `padding-top` pushes label text below icon; `padding-bottom` pulls text UP (opposite of intuition)
+- `padding: 120px 12px 10px 12px` with `min-height: 200px` pushes text below the icon area
+- 8-digit hex `#RRGGBBAA` is NOT supported by GTK3 CSS parser — always use `rgba(r,g,b,a)`
+
+**cachy-update windowrule:**
+- Uses `windowrule { name = cachy-update-float; match:title = ^(cachy-update)$; float = on; size = 1000 700; center = on; }`
+- Must use block syntax (not one-liner) for `size`/`center` — one-liner only accepts `float`
 
 **Wallpaper picker not applying:**
 - Uses `$HOME/.local/bin/wallset-backend` (full path) — `execDetached` doesn't inherit user PATH

@@ -1088,10 +1088,10 @@ ShellRoot {
     Process {
         id: overviewStartProc
         running: false
-        command: ["sh", "-c", "pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline 2>/dev/null | tr \"\\0\" \" \" | grep -q \"overview\"' 2>/dev/null || qs -c overview"]
+        command: ["sh", "-c", "pgrep -x qs | xargs -I{} sh -c 'cat /proc/{}/cmdline 2>/dev/null | tr \"\\0\" \" \" | grep -q \"overview\"' 2>/dev/null || nohup qs -c overview > /dev/null 2>&1 & disown"]
         onRunningChanged: {
-            if (!running && overviewStartProc.exitCode !== 0 && overviewStartProc.exitCode !== null) {
-                console.log("Failed to start quickshell-overview (exit:", overviewStartProc.exitCode, ")");
+            if (!running && exitCode !== 0 && exitCode !== null) {
+                console.log("Failed to start quickshell-overview (exit:", exitCode, ")");
             }
         }
     }

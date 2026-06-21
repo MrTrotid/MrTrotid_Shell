@@ -535,7 +535,7 @@ Item {
                             text: BatteryService.hasBattery ? BatteryService.batteryPercent + "%" : ""
                             color: colOnPrimary
                             font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
+                    font.pixelSize: 12
                             font.weight: Font.Bold
                         }
                     }
