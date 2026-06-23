@@ -11,7 +11,7 @@
   - `~/.config/wlogout/style.css` (generated from matugen template) — uses `rgba()`, NOT 8-digit hex (#RRGGBBAA unsupported by GTK parser); text pushed below icons via large `padding-top`
 
 ## Essential Commands
-- Change wallpaper: `wallset` (opens selector) or `Super + W`
+- Change wallpaper: `wallset` (opens selector) or `Super + Shift + T`
 - Random wallpaper on login: `wallset-backend-startup`
 - Apply current wallpaper theme manually: `wallset-backend`
 - Toggle bar: `Super + O` (Quickshell bar visibility)
@@ -241,7 +241,7 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Super + J` | Toggle quick actions HUD | `quickshell:quickActionsToggle` |
 | `Super + I` | Toggle settings panel | `quickshell:settingsToggle` |
 | `Super + /` | Toggle cheatsheet | `quickshell:cheatsheetToggle` |
-| `Ctrl + Super + T` | Toggle wallpaper picker | `quickshell:wallpaperToggle` |
+| `Ctrl + Super + T` / `Super + Shift + T` | Toggle wallpaper picker | `quickshell:wallpaperToggle` |
 | `Super + V` | Toggle clipboard manager | `quickshell:clipboardToggle` |
 | `Super + .` | Toggle emoji picker | `quickshell:emojiToggle` |
 | `Super + ,` | Toggle GIF picker | `quickshell:gifToggle` |
@@ -266,6 +266,8 @@ Uses `wf-recorder`. Saves to `~/Videos/Recordings/`.
 | `Ctrl + Shift + Print` | Annotate screenshot (swappy) | exec |
 | `Alt + Print` | Monitor screenshot | exec |
 | `Super + Shift + C` | Color picker (hyprpicker) | exec |
+| `Super + Print` | Full recording | exec |
+| `Super + Shift + Print` | Region recording | exec |
 | `Ctrl + Shift + R` | Region recording | exec |
 | `Ctrl + Alt + R` | Full recording | exec |
 
